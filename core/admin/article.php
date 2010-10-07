@@ -7,6 +7,8 @@
  * @author	Stephane F et Florent MONTHEL
  **/
 
+include_once dirname(__FILE__)."/../vendor/markdown.php";
+
 include(dirname(__FILE__).'/prepend.php');
 
 # Formulaire validé
@@ -130,7 +132,7 @@ if(isset($_POST['preview'])) {
 	$_content = plxUtils::rel2abs($plxAdmin->aConf['racine'], $content);
 	echo '<blockquote id="preview">';
 	echo "<h3>Pr&eacute;visualisation : ".plxUtils::strCheck($title)."</h3>\n";
-	echo '<div class="preview">'.$_chapo.'</div><div class="preview">'.$_content.'</div>';
+	echo '<div class="preview">'.Markdown($_chapo).'</div><div class="preview">'.Markdown($_content).'</div>';
 	echo "</blockquote>\n";
 }
 ?>
