@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <document>
 	<parametre name="title"><![CDATA[PluXml]]></parametre>
 	<parametre name="description"><![CDATA[le blog full XML]]></parametre>
@@ -7,7 +7,7 @@
 	<parametre name="allow_com">1</parametre>
 	<parametre name="mod_com">0</parametre>
 	<parametre name="capcha">1</parametre>
-	<parametre name="style">defaut</parametre>
+	<parametre name="style">theme-pandora</parametre>
 	<parametre name="style_mobile">mobile.defaut</parametre>
 	<parametre name="clef">defczniZR3AUsrd</parametre>
 	<parametre name="bypage">5</parametre>
@@ -31,7 +31,7 @@
 	<parametre name="urlrewriting">0</parametre>
 	<parametre name="gzip">0</parametre>
 	<parametre name="feed_chapo">0</parametre>
-	<parametre name="feed_footer"></parametre>
+	<parametre name="feed_footer"><![CDATA[]]></parametre>
 	<parametre name="editor">plxtoolbar</parametre>
 	<parametre name="version">5.0.2</parametre>
 </document>
