@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Classe plxDate rassemblant les fonctions utiles à PluXml
+ * Classe plxDate rassemblant les fonctions utiles ï¿½ PluXml
  * concernant la manipulation des dates
  *
  * @package PLX
@@ -10,7 +10,7 @@
 class plxDate {
 
 	/**
-	 * Méthode qui retourne le timestamp UNIX actuel avec les microsecondes
+	 * Mï¿½thode qui retourne le timestamp UNIX actuel avec les microsecondes
 	 *
 	 * @return	timestamp	valeur du timestamp actuel
 	 **/
@@ -21,11 +21,11 @@ class plxDate {
 	}
 
 	/**
-	 * Méthode qui retourne le libellé du mois ou du jour passé en paramètre
+	 * Mï¿½thode qui retourne le libellï¿½ du mois ou du jour passï¿½ en paramï¿½tre
 	 *
 	 * @param	key		constante: 'day' ou 'month'
 	 * @param	value	numero du mois ou du jour
-	 * @return	string	libellé du mois ou du jour
+	 * @return	string	libellï¿½ du mois ou du jour
 	 **/
 	public static function getCalendar($key, $value) {
 
@@ -60,9 +60,9 @@ class plxDate {
 	}
 
 	/**
-	 * Méthode qui convertit une date au format ISO en tenant compte d'un décalage horaire
+	 * Mï¿½thode qui convertit une date au format ISO en tenant compte d'un dï¿½calage horaire
 	 *
-	 * @param	date		date sous forme de chaine de caractères
+	 * @param	date		date sous forme de chaine de caractï¿½res
 	 * @return	date		date au format ISO
 	 **/
 	public static function dateToIso($date,$delta) {
@@ -75,7 +75,7 @@ class plxDate {
 	}
 
 	/**
-	 * Méthode qui retourne un timestamp au format ISO en tenant compte d'un décalage horaire
+	 * Mï¿½thode qui retourne un timestamp au format ISO en tenant compte d'un dï¿½calage horaire
 	 *
 	 * @param	timestamp	timestamp
 	 * @return	date		date au format ISO
@@ -86,11 +86,11 @@ class plxDate {
 	}
 
 	/**
-	 * Méthode qui convertit une date ISO au format humain en tenant compte du formatage passé en paramètre
+	 * Mï¿½thode qui convertit une date ISO au format humain en tenant compte du formatage passï¿½ en paramï¿½tre
 	 *
 	 * @param	date		date au format AAAAMMJJ
 	 * @param	format		format de la date de sortie (variable: #minute,#hour,#day,#month,#num_day,#num_month,#num_year(2),#num_year(4))
-	 * @return	date		date formatée au format humain 
+	 * @return	date		date formatï¿½e au format humain 
 	 **/
 	public static function dateIsoToHum($date, $format='#day #num_day #month #num_year(4)') {
 
@@ -116,10 +116,10 @@ class plxDate {
 	}
 
 	/**
-	 * Méthode qui retourne l'heure au format humain contenue dans une date au format ISO
+	 * Mï¿½thode qui retourne l'heure au format humain contenue dans une date au format ISO
 	 *
 	 * @param	date		date au format ISO
-	 * @return	heure		heure formatée HH:MM
+	 * @return	heure		heure formatï¿½e HH:MM
 	 **/
 	public static function heureIsoToHum($date) {
 
@@ -128,10 +128,10 @@ class plxDate {
 	}
 	
 	/**
-	 * Méthode qui découpe une date ISO dans un tableau (element du tableau: year, month, day, time, delta)
+	 * Mï¿½thode qui dï¿½coupe une date ISO dans un tableau (element du tableau: year, month, day, time, delta)
 	 *
 	 * @param	date		date au format ISO
-	 * @return	array		tableau contenant les différentes parties de la date
+	 * @return	array		tableau contenant les diffï¿½rentes parties de la date
 	 **/
 	public static function dateIso2Admin($date) {
 
@@ -140,17 +140,17 @@ class plxDate {
 	}	
 	
 	/**
-	 * Méthode qui vérifie la validité de la date et de l'heure
+	 * Mï¿½thode qui vï¿½rifie la validitï¿½ de la date et de l'heure
 	 *
 	 * @param	int		mois
 	 * @param	int		jour
-	 * @param	int		année
+	 * @param	int		annï¿½e
 	 * @param	int		heure:minute
 	 * @return	boolean	vrai si la date est valide
 	 **/
 	public static function checkDate($day, $month, $year, $time) {
 		
-		return (preg_match("/^(0[1-9]|[1-2][0-9]|3[0-1])(0[1-9]|1[0-2])20[0-9]{2}([0-1][0-9]|2[0-3])\:[0-5][0-9]$/",$day.$month.$year.$time)
+		return (preg_match("/^(0[1-9]|[1-2][0-9]|3[0-1])(0[1-9]|1[0-2])[0-9]{4}([0-1][0-9]|2[0-3])\:[0-5][0-9]$/",$day.$month.$year.$time)
 			AND checkdate($month, $day, $year));
 
 	}
