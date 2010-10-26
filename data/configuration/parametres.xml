@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <document>
-	<parametre name="title"><![CDATA[PluXml]]></parametre>
-	<parametre name="description"><![CDATA[le blog full XML]]></parametre>
-	<parametre name="racine"><![CDATA[http://localhost/pluxml2/]]></parametre>
+	<parametre name="title"><![CDATA[ChronoBlog]]></parametre>
+	<parametre name="description"><![CDATA[Chronique familiale]]></parametre>
+	<parametre name="racine"><![CDATA[/pluxml2/]]></parametre>
 	<parametre name="delta">+00:00</parametre>
 	<parametre name="allow_com">1</parametre>
 	<parametre name="mod_com">0</parametre>
 	<parametre name="capcha">1</parametre>
-	<parametre name="style">theme-pandora</parametre>
+	<parametre name="style">theme-bvi</parametre>
 	<parametre name="style_mobile">mobile.defaut</parametre>
 	<parametre name="clef">defczniZR3AUsrd</parametre>
 	<parametre name="bypage">5</parametre>
@@ -16,17 +16,17 @@
 	<parametre name="bypage_feed">8</parametre>
 	<parametre name="tri">desc</parametre>
 	<parametre name="tri_coms">asc</parametre>
-	<parametre name="miniatures_l">200</parametre>
-	<parametre name="miniatures_h">100</parametre>
-	<parametre name="images">../pluxml_data/images/</parametre>
-	<parametre name="documents">../pluxml_data/documents/</parametre>
-	<parametre name="racine_articles">../pluxml_data/articles/</parametre>
-	<parametre name="racine_commentaires">../pluxml_data/commentaires/</parametre>
-	<parametre name="racine_statiques">../pluxml_data/statiques/</parametre>
-	<parametre name="statiques">../pluxml_data/configuration/statiques.xml</parametre>
-	<parametre name="categories">../pluxml_data/configuration/categories.xml</parametre>
-	<parametre name="users">../pluxml_data/configuration/users.xml</parametre>
-	<parametre name="tags">../pluxml_data/configuration/tags.xml</parametre>
+	<parametre name="miniatures_l">320</parametre>
+	<parametre name="miniatures_h">200</parametre>
+	<parametre name="images">data/images/</parametre>
+	<parametre name="documents">data/documents/</parametre>
+	<parametre name="racine_articles">data/articles/</parametre>
+	<parametre name="racine_commentaires">data/commentaires/</parametre>
+	<parametre name="racine_statiques">data/statiques/</parametre>
+	<parametre name="statiques">data/configuration/statiques.xml</parametre>
+	<parametre name="categories">data/configuration/categories.xml</parametre>
+	<parametre name="users">data/configuration/users.xml</parametre>
+	<parametre name="tags">data/configuration/tags.xml</parametre>
 	<parametre name="homestatic"></parametre>
 	<parametre name="urlrewriting">0</parametre>
 	<parametre name="gzip">0</parametre>
