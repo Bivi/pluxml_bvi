@@ -1,4 +1,5 @@
 <?php
+include_once dirname(__FILE__)."/../vendor/markdown.php";
 
 /**
  * Classe plxFeed responsable du traitement global des flux de syndication
@@ -183,10 +184,10 @@ class plxFeed extends plxMotor {
 			while($this->plxRecord_arts->loop()) {
 				# Traitement initial
 				if($this->aConf['feed_chapo']) {
-					$content = $this->plxRecord_arts->f('chapo');
-					if(trim($content)=='') $content = $this->plxRecord_arts->f('content');
+					$content = Markdown($this->plxRecord_arts->f('chapo'));
+					if(trim($content)=='') $content = Markdown($this->plxRecord_arts->f('content'));
 				} else {
-					$content = $this->plxRecord_arts->f('chapo').$this->plxRecord_arts->f('content');
+					$content = Markdown($this->plxRecord_arts->f('chapo')).Markdown($this->plxRecord_arts->f('content'));
 				}
 				$content .= $this->aConf['feed_footer'];
 				$artId = $this->plxRecord_arts->f('numero') + 0;
@@ -266,10 +267,10 @@ class plxFeed extends plxMotor {
 				# Traitement initial
 				# Traitement initial
 				if($this->aConf['feed_chapo']) {
-					$content = $this->plxRecord_arts->f('chapo');
-					if(trim($content)=='') $content = $this->plxRecord_arts->f('content');
+					$content = Markdown($this->plxRecord_arts->f('chapo'));
+					if(trim($content)=='') $content = Markdown($this->plxRecord_arts->f('content'));
 				} else {
-					$content = $this->plxRecord_arts->f('chapo').$this->plxRecord_arts->f('content');
+					$content = Markdown($this->plxRecord_arts->f('chapo')).Markdown($this->plxRecord_arts->f('content'));
 				}
 				$content .= $this->aConf['feed_footer'];				
 				$artId = $this->plxRecord_arts->f('numero') + 0;
