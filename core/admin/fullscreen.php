@@ -7,6 +7,8 @@
  * @author  Stephane F
  **/
  
+include_once dirname(__FILE__)."/../vendor/markdown.php";
+
 include(dirname(__FILE__).'/prepend.php');
 
 # Initialisation de la vue (chapo ou content)
@@ -44,7 +46,8 @@ else
 <?php # On a un aperçu
 if(isset($_POST['preview']) AND $origine == 'article') {
 	# On remplace les chemins des images et documents (pas au même niveau)
-	$_content = str_replace('src="'.$plxAdmin->aConf['images'],'src="'.PLX_ROOT.$plxAdmin->aConf['images'],$content);
+  $_content = Markdown($content);
+	$_content = str_replace('src="'.$plxAdmin->aConf['images'],'src="'.PLX_ROOT.$plxAdmin->aConf['images'],$_content);
 	$_content = str_replace('href="'.$plxAdmin->aConf['documents'],'href="'.PLX_ROOT.$plxAdmin->aConf['documents'],$_content);
 	$_content = str_replace('href="./?telechargement/','href="'.PLX_ROOT.'?telechargement/',$_content);
 	echo '<blockquote id="preview">';

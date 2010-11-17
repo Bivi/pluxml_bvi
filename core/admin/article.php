@@ -128,11 +128,13 @@ $cat_id='000';
 if(isset($_POST['preview'])) {
 
 	# On remplace les chemins relatifs en chemin absolus
-	$_chapo = plxUtils::rel2abs($plxAdmin->aConf['racine'], $chapo);
-	$_content = plxUtils::rel2abs($plxAdmin->aConf['racine'], $content);
+  $_chapo = Markdown($chapo);
+  $_content = Markdown($content);
+	$_chapo = plxUtils::rel2abs($plxAdmin->aConf['racine'], $_chapo);
+	$_content = plxUtils::rel2abs($plxAdmin->aConf['racine'], $_content);
 	echo '<blockquote id="preview">';
 	echo "<h3>Pr&eacute;visualisation : ".plxUtils::strCheck($title)."</h3>\n";
-	echo '<div class="preview">'.Markdown($_chapo).'</div><div class="preview">'.Markdown($_content).'</div>';
+	echo '<div class="preview">'.$_chapo.'</div><div class="preview">'.$_content.'</div>';
 	echo "</blockquote>\n";
 }
 ?>
