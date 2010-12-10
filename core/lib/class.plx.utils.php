@@ -160,9 +160,9 @@ class plxUtils {
 	public static function printArea($name, $value='', $cols='', $rows='', $readonly=false, $class='') {
 
 		if($readonly)
-			echo '<textarea id="id_'.$name.'" name="'.$name.'" class="readonly" cols="'.$cols.'" rows="'.$rows.'" readonly="readonly">'.$value.'</textarea>'."\n";
+			echo '<textarea id="id_'.$name.'" name="'.$name.'" class="readonly" cols="'.$cols.'" rows="'.$rows.'" readonly="readonly" wrap="off">'.$value.'</textarea>'."\n";
 		else
-			echo '<textarea id="id_'.$name.'" name="'.$name.'"'.($class!=''?' class="'.$class.'"':'').' cols="'.$cols.'" rows="'.$rows.'">'.$value.'</textarea>'."\n";
+			echo '<textarea id="id_'.$name.'" name="'.$name.'"'.($class!=''?' class="'.$class.'"':'').' cols="'.$cols.'" rows="'.$rows.'" wrap="off">'.$value.'</textarea>'."\n";
 	}
 
 	/**
