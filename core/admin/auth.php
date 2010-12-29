@@ -24,7 +24,7 @@ if(isset($_GET['p']) AND !empty($_GET['p'])) {
 	} 
 }
 
-# Déconnexion
+# Dï¿½connexion
 if(!empty($_GET['d'])) {
 	$_SESSION = array();
 	session_destroy();
@@ -46,7 +46,7 @@ if(!empty($_POST['login']) AND !empty($_POST['password'])) {
 		if(!empty($_GET['p']) AND basename(urldecode($_GET['p'])) != '' AND basename(urldecode($_GET['p'])) != 'admin')
 			header('Location: '.$plxAdmin->aConf['racine'].'core/admin/'.basename(urldecode($_GET['p'])));
 		else
-			header('Location: '.$plxAdmin->aConf['racine'].'core/admin/');
+			header('Location: '.$plxAdmin->aConf['racine']);
 		exit;
 	} else {
 		$msg = 'Login et/ou mot de passe incorrect';

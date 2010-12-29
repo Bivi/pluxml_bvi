@@ -8,7 +8,7 @@
 
 include(dirname(__FILE__).'/prepend.php');
 
-# Control de l'accès à la page en fonction du profil de l'utilisateur connecté
+# Control de l'accï¿½s ï¿½ la page en fonction du profil de l'utilisateur connectï¿½
 $plxAdmin->checkProfil(PROFIL_ADMIN);
 
 # Edition des utilisateurs
@@ -22,7 +22,8 @@ if (!empty($_POST)) {
 $aProfils = array(
 	PROFIL_ADMIN => 'Administrateur',
 	PROFIL_MODERATOR => 'R&eacute;dacteur avanc&eacute;',
-	PROFIL_WRITER => 'R&eacute;dacteur'
+	PROFIL_WRITER => 'R&eacute;dacteur',
+        PROFIL_READER => 'Lecteur'
 );
 
 # On inclut le header	
@@ -77,7 +78,7 @@ include(dirname(__FILE__).'/top.php');
 				echo '</td></tr>';
 			}
 		}
-		# On récupère le dernier identifiant
+		# On rï¿½cupï¿½re le dernier identifiant
 		$a = array_keys($plxAdmin->aUsers);
 		rsort($a);
 	} else {
@@ -99,7 +100,7 @@ include(dirname(__FILE__).'/top.php');
 				echo '</td><td>';
 				plxUtils::printInput($new_userid.'_password', '', 'password', '11-255');
 				echo '</td><td>';
-				plxUtils::printSelect($new_userid.'_profil', $aProfils, PROFIL_WRITER);
+				plxUtils::printSelect($new_userid.'_profil', $aProfils, PROFIL_READER);
 				echo '</td><td>';
 				plxUtils::printSelect($new_userid.'_active', array( '0' => 'Non', '1' => 'Oui'), '1');
 				echo '</td>';

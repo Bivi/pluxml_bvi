@@ -86,6 +86,8 @@ include(dirname(__FILE__).'/top.php');
 		<p class="field"><label>Fuseau horaire&nbsp;:</label></p>
 		<?php plxUtils::printSelect('delta', $delta, $plxAdmin->aConf['delta']); ?>
 		
+		<p class="field"><label>Site priv&eacute;&nbsp;:</label></p>
+		<?php plxUtils::printSelect('private_site',array('1'=>'Oui','0'=>'Non'), $plxAdmin->aConf['private_site']); ?>
 		<p class="field"><label>Autoriser les commentaires&nbsp;:</label></p>
 		<?php plxUtils::printSelect('allow_com',array('1'=>'Oui','0'=>'Non'), $plxAdmin->aConf['allow_com']); ?>
 		<p class="field"><label>Mod&eacute;rer les commentaires &agrave; la cr&eacute;ation&nbsp;:</label></p>

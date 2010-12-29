@@ -40,6 +40,12 @@ $plxMotor = new plxMotor(PLX_CONF);
 $plxMotor->prechauffage();
 $plxMotor->demarrage();
 
+# Test sur l'identification pour site privé
+if(($plxMotor->aConf['private_site']==1) AND (!defined('PLX_AUTHPAGE') or PLX_AUTHPAGE !== true) AND (!isset($_SESSION['user']) OR $_SESSION['user']=='')) {
+	header('Location: core/admin/auth.php?p='.$_SERVER['REQUEST_URI']);
+	exit;
+}
+
 # Creation de l'objet d'affichage
 $plxShow = new plxShow($plxMotor);
 

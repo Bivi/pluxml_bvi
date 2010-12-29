@@ -19,6 +19,7 @@ define('PLX_CONF', PLX_ROOT.'data/configuration/parametres.xml');
 define('PROFIL_ADMIN', 0);
 define('PROFIL_MODERATOR', 1);
 define('PROFIL_WRITER', 2);
+define('PROFIL_READER', 3);
 
 # On verifie que PluXml est installé
 if(!file_exists(PLX_CONF)) {
@@ -48,7 +49,7 @@ header('Content-Type: text/html; charset='.PLX_CHARSET);
 $plxAdmin = new plxAdmin(PLX_CONF);
 
 # Test sur l'identification
-if((!defined('PLX_AUTHPAGE') or PLX_AUTHPAGE !== true) AND (!isset($_SESSION['user']) OR $_SESSION['user']=='')) {
+if((!defined('PLX_AUTHPAGE') or PLX_AUTHPAGE !== true) AND (!isset($_SESSION['user']) OR $_SESSION['user']=='' OR $_SESSION['profil'] > PROFIL_WRITER)) {
 	header('Location: auth.php?p='.$_SERVER['REQUEST_URI']);
 	exit;
 }
