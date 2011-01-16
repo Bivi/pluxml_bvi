@@ -44,7 +44,7 @@
 	<div class="widget widget_tags">
 		<h3>Mots cl&eacute;s</h3>
 		<ul>
-			<?php $plxShow->tagList('<li class="#tag_status"><a href="#tag_url" title="#tag_name">#tag_name</a></li>', 20); ?>
+			<?php $plxShow->tagList('<li class="#tag_status"><a href="#tag_url" title="#tag_name">#tag_name</a></li>', 100); ?>
 			<li class="last_li">&nbsp;</li>
 		</ul>
 	</div>

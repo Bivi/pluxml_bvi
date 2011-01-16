@@ -473,13 +473,30 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 	}
 	
 	/**
+	 * Méthode qui extrait les tags {nom du tag} d'une chaine
+	 *
+	 * @param	txt chaine contenant des tags
+	 * @return	array
+	 * @author	BVi
+	 **/
+	public function tagsFrom($txt) {
+          $matchs = array();
+          preg_match_all("/{([^}]+)}/", $txt, $matchs);
+          $ret = implode(",", $matchs[1]);
+          if ($ret > "")
+            return $ret;
+          else
+            return;
+        }
+        
+	/**
 	 * Méthode qui effectue une création ou mise a jour d'un article
 	 *
 	 * @param	content	données saisies de l'article
-	 * @param	&id	retourne le numero de l'article 
+	 * @param	&id	retourne le numero de l'article
 	 * @return	string
 	 * @author	Stephane F. et Florent MONTHEL
-	 **/	
+	 **/
 	public function editArticle($content, &$id) {
 
 		# Détermine le numero de fichier si besoin est
@@ -519,7 +536,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 		# On va mettre à jour notre fichier
 		if(plxUtils::write($xml,$filename)) {
 			# mise à jour de la liste des tags
-			$this->aTags[$id] = array('tags'=>trim($content['tags']), 'date'=>$time, 'active'=>intval(!in_array('draft', $content['catId'])));
+			$this->aTags[$id] = array('tags'=>implode(',',array(trim($content['tags']),$this->tagsFrom($content['chapo'].$content['content']))), 'date'=>$time, 'active'=>intval(!in_array('draft', $content['catId'])));
 			$this->editTags();
 			if($content['artId'] == '0000' OR $content['artId'] == '')
 				return plxMsg::Info('Article cr&eacute;&eacute; avec succ&egrave;s');

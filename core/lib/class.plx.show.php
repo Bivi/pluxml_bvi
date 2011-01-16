@@ -546,7 +546,7 @@ class plxShow {
 	 * @author	Stephane F
 	 **/
 	public function artTags($format='<a class="#tag_status" href="#tag_url" title="#tag_name">#tag_name</a>') {
-	
+
 		# Initialisation de notre variable interne
 		$taglist = $this->plxMotor->plxRecord_arts->f('tags');
 		if(!empty($taglist)) {
@@ -555,12 +555,56 @@ class plxShow {
 				$t = plxUtils::title2url($tag);
 				$name = str_replace('#tag_url',$this->plxMotor->urlRewrite('?tag/'.$t),$format);
 				$name = str_replace('#tag_name',plxUtils::strCheck($tag),$name);
-				$name = str_replace('#tag_status',(($this->plxMotor->mode=='tags' AND $this->plxMotor->cible==$t)?'active':'noactive'), $name);				
+				$name = str_replace('#tag_status',(($this->plxMotor->mode=='tags' AND $this->plxMotor->cible==$t)?'active':'noactive'), $name);
 				echo $name;
 			}
 		}
 		else echo 'Aucun';
-	}	
+	}
+
+	/**
+	 * Méthode qui retourne un lien vers un tag à partir de son nom
+	 *
+	 * @param	format	format du texte pour chaque tag (variable : #tag_status, #tag_url, #tag_name)
+	 *              tag_name nom du tag
+	 * @return	string
+	 * @scope	home,categorie,article
+	 * @author	BVI
+	 **/
+	public function tag2link($tag, $format='<a class="#tag_status" href="#tag_url" title="#tag_name">#tag_name</a>') {
+
+          $t = plxUtils::title2url($tag);
+          $name = str_replace('#tag_url',$this->plxMotor->urlRewrite('?tag/'.$t),$format);
+          $name = str_replace('#tag_name',plxUtils::strCheck($tag),$name);
+          $name = str_replace('#tag_status',(($this->plxMotor->mode=='tags' AND $this->plxMotor->cible==$t)?'active':'noactive'), $name);
+          return $name;
+	}
+
+	/**
+	 * Méthode qui remplace tous les tags de type {nom de tag} dans un contenu par <a class="#tag_status" href="#tag_url" title="#tag_name">#tag_name</a>
+	 *
+	 * @param	txt texte d'entrée
+	 * @return	string
+	 * @scope	home,categorie,article
+	 * @author	BVI
+	 **/
+        function replaceTagsCallBack($matches)
+        {
+          // as usual: $matches[0] is the complete match
+          // $matches[1] the match for the first subpattern
+          // enclosed in '(...)' and so on
+          return $this->tag2link($matches[1]);
+        }
+
+	public function replaceTags($txt) {
+
+          return
+            preg_replace_callback(
+              '/{([^}]+)}/',
+              'plxShow::replaceTagsCallBack',
+              $txt
+              );
+	}
 
 	/**
 	 * M�thode qui affiche le ch�po de l'article ainsi qu'un lien 
@@ -582,14 +626,14 @@ class plxShow {
 			$title = plxUtils::strCheck($this->plxMotor->plxRecord_arts->f('title'));
 			$url = $this->plxMotor->plxRecord_arts->f('url');
 			# On effectue l'affichage
-			echo Markdown($this->plxMotor->plxRecord_arts->f('chapo'))."\n";
+			echo $this->replaceTags(Markdown($this->plxMotor->plxRecord_arts->f('chapo')))."\n";
 			if($format) {
 				$title = str_replace("#art_title", $title, $format);
 				echo '<p><a class="more" href="'.$this->plxMotor->urlRewrite('?article'.$id.'/'.$url).'" title="'.$title.'">'.$title.'</a></p>'."\n";
 			}
 		} else { # Pas de chapo, affichage du contenu
 			if($content === true) {
-				echo Markdown($this->plxMotor->plxRecord_arts->f('content'))."\n";
+				echo $this->replaceTags(Markdown($this->plxMotor->plxRecord_arts->f('content')))."\n";
 			}
 		}
 	}
@@ -605,8 +649,8 @@ class plxShow {
 	public function artContent($chapo=true) {
 	
 		if($chapo === true)
-			echo Markdown($this->plxMotor->plxRecord_arts->f('chapo'))."\n"; # Chapo
-		echo Markdown($this->plxMotor->plxRecord_arts->f('content'))."\n";
+			echo $this->replaceTags(Markdown($this->plxMotor->plxRecord_arts->f('chapo')))."\n"; # Chapo
+		echo $this->replaceTags(Markdown($this->plxMotor->plxRecord_arts->f('content')))."\n";
 
 	}
 
