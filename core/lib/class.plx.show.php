@@ -588,7 +588,7 @@ class plxShow {
 	 * @scope	home,categorie,article
 	 * @author	BVI
 	 **/
-        function replaceTagsCallBack($matches)
+        public function replaceTagsCallBack($matches)
         {
           // as usual: $matches[0] is the complete match
           // $matches[1] the match for the first subpattern
@@ -601,7 +601,7 @@ class plxShow {
           return
             preg_replace_callback(
               '/{([^}]+)}/',
-              'plxShow::replaceTagsCallBack',
+              array(&$this, 'replaceTagsCallBack'),
               $txt
               );
 	}
