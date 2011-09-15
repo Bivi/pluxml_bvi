@@ -25,7 +25,7 @@ class plxUtils {
 	/**
 	 * Méthode qui supprime les antislashs
 	 *
-	 * @param	content				variable ou tableau 
+	 * @param	content				variable ou tableau
 	 * @return	array ou string		tableau ou variable avec les antislashs supprimés
 	 **/
 	public static function unSlash($content) {
@@ -58,11 +58,9 @@ class plxUtils {
 	 **/
 	public static function checkMail($mail) {
 
-		# On verifie le mail via une expression reguliere
-		if(preg_match('/^[-+.\w]{1,64}@[-.\w]{1,64}\.[-.\w]{2,6}$/i',$mail))
-			return true;
-		else
+		if (strlen($mail) > 80)
 			return false;
+		return preg_match('/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|("[^"]+"))@((\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])|(([a-zA-Z\d\-]+\.)+[a-zA-Z]{2,}))$/', $mail);
 	}
 
 	/**
@@ -74,10 +72,8 @@ class plxUtils {
 	public static function checkSite($site) {
 
 		# On verifie le site via une expression reguliere
-		if(preg_match('/^http(s)?:\/\/[-.\w]{1,64}\.[-.\w]{2,6}/i',$site))
-			return true;
-		else
-			return false;
+		# Méthode Jeffrey Friedl - http://mathiasbynens.be/demo/url-regex
+		return preg_match('@\b((ftp|https?)://[-\w]+(\.\w[-\w]*)+|(?:[a-z0-9](?:[-a-z0-9]*[a-z0-9])?\.)+(?: com\b|edu\b|biz\b|gov\b|in(?:t|fo)\b|mil\b|net\b|org\b|[a-z][a-z]\b))(\:\d+)?(/[^.!,?;"\'<>()\[\]{}\s\x7F-\xFF]*(?:[.!,?]+[^.!,?;"\'<>()\[\]{}\s\x7F-\xFF]+)*)?@iS', $site);
 	}
 
 	/**
@@ -98,14 +94,18 @@ class plxUtils {
 	 * @param	selected	valeur par défaut
 	 * @param	readonly	vrai si la liste est en lecture seule (par défaut à faux)
 	 * @param	class		class css à utiliser pour formater l'affichage
+	 * @param	id			si à vrai génère un id
 	 * @return	stdout
 	 **/
-	public static function printSelect($name, $array, $selected='', $readonly=false, $class='') {
+	public static function printSelect($name, $array, $selected='', $readonly=false, $class='', $id=true) {
 
+		if(!is_array($array)) $array=array();
+
+		$id = ($id?' id="id_'.$name.'"':'');
 		if($readonly)
-			echo '<select id="id_'.$name.'" name="'.$name.'" disabled="disabled" class="readonly">'."\n";
+			echo '<select'.$id.' name="'.$name.'" disabled="disabled" class="readonly">'."\n";
 		else
-			echo '<select id="id_'.$name.'" name="'.$name.'"'.($class!=''?' class="'.$class.'"':'').'>'."\n";			
+			echo '<select'.$id.' name="'.$name.'"'.($class!=''?' class="'.$class.'"':'').'>'."\n";
 		foreach($array as $a => $b) {
 			if(is_array($b)) {
 				echo '<optgroup label="'.$a.'">'."\n";
@@ -143,7 +143,7 @@ class plxUtils {
 		if($readonly)
 			echo '<input id="id_'.$name.'" name="'.$name.'" type="'.$type.'" class="readonly" value="'.$value.'" size="'.$size[0].'" maxlength="'.$size[1].'" readonly="readonly" />'."\n";
 		else
-			echo '<input id="id_'.$name.'" name="'.$name.'" type="'.$type.'"'.($class!=''?' class="'.$class.'"':'').' value="'.$value.'" size="'.$size[0].'" maxlength="'.$size[1].'" />'."\n";	
+			echo '<input id="id_'.$name.'" name="'.$name.'" type="'.$type.'"'.($class!=''?' class="'.$class.'"':'').' value="'.$value.'" size="'.$size[0].'" maxlength="'.$size[1].'" />'."\n";
 	}
 
 	/**
@@ -169,14 +169,100 @@ class plxUtils {
 	 * Méthode qui teste si un fichier est accessible en écriture
 	 *
 	 * @param	file		emplacement et nom du fichier à tester
-	 * @return	stdout		affiche un message si le fichier est accessible ou non en écriture
-	 **/	
-	public static function testWrite($file) {
+	 * @param	format		format d'affichage
+	 **/
+	public static function testWrite($file, $format="<li><span style=\"color:#color\">#symbol</span>#message</li>\n") {
 
-		if(is_writable($file))
-			echo $file.' est accessible en &eacute;criture';
-		else
-			echo '<span class="alert">'.$file.' n\'est pas accessible en &eacute;criture</span>';
+		if(is_writable($file)) {
+			$output = str_replace('#color', 'green', $format);
+			$output = str_replace('#symbol', '&#10004;', $output);
+			$output = str_replace('#message', sprintf(L_WRITE_ACCESS, $file), $output);
+			echo $output;
+		} else {
+			$output = str_replace('#color', 'red', $format);
+			$output = str_replace('#symbol', '&#10007;', $output);
+			$output = str_replace('#message', sprintf(L_WRITE_NOT_ACCESS, $file), $output);
+			echo $output;
+		}
+	}
+
+	/**
+	 * Méthode qui teste si le module apache mod_rewrite est disponible
+	 *
+	 * @param	io			affiche à l'écran le resultat du test si à VRAI
+	 * @param	format		format d'affichage
+	 * @return	boolean		retourne vrai si le module apache mod_rewrite est disponible
+	 * @author	Stephane F
+	 **/
+	public static function testModRewrite($io=true, $format="<li><span style=\"color:#color\">#symbol</span>#message</li>\n") {
+
+		if(function_exists('apache_get_modules')) {
+			$test = in_array("mod_rewrite", apache_get_modules());
+			if($io==true) {
+				if($test) {
+					$output = str_replace('#color', 'green', $format);
+					$output = str_replace('#symbol', '&#10004;', $output);
+					$output = str_replace('#message', L_MODREWRITE_AVAILABLE, $output);
+					echo $output;
+				} else {
+					$output = str_replace('#color', 'red', $format);
+					$output = str_replace('#symbol', '&#10007;', $output);
+					$output = str_replace('#message', L_MODREWRITE_NOT_AVAILABLE, $output);
+					echo $output;
+				}
+			}
+			return $test;
+		}
+		else return true;
+	}
+
+	/**
+	 * Méthode qui teste si la fonction php mail est disponible
+	 *
+	 * @param	io			affiche à l'écran le resultat du test si à VRAI
+	 * @param	format		format d'affichage
+	 * @return	boolean		retourne vrai si la fonction php mail est disponible
+	 * @author	Stephane F
+	 **/
+	public static function testMail($io=true, $format="<li><span style=\"color:#color\">#symbol</span>#message</li>\n") {
+
+		if($return=function_exists('mail')) {
+			if($io==true) {
+				$output = str_replace('#color', 'green', $format);
+				$output = str_replace('#symbol', '&#10004;', $output);
+				$output = str_replace('#message', L_MAIL_AVAILABLE, $output);
+				echo $output;
+			}
+		} else {
+			if($io==true) {
+				$output = str_replace('#color', 'red', $format);
+				$output = str_replace('#symbol', '&#10007;', $output);
+				$output = str_replace('#message', L_MAIL_NOT_AVAILABLE, $output);
+				echo $output;
+			}
+		}
+		return $return;
+	}
+
+	/**
+	 * Méthode qui teste si la bibliothèque GD est installé
+	 *
+	 * @param	format		format d'affichage
+	 * @author	Stephane F
+	 **/
+	public static function testLibGD($format="<li><span style=\"color:#color\">#symbol</span>#message</li>\n") {
+
+		if(function_exists('imagecreatetruecolor')) {
+			$output = str_replace('#color', 'green', $format);
+			$output = str_replace('#symbol', '&#10004;', $output);
+			$output = str_replace('#message', L_LIBGD_INSTALLED, $output);
+			echo $output;
+		} else {
+			$output = str_replace('#color', 'red', $format);
+			$output = str_replace('#symbol', '&#10007;', $output);
+			$output = str_replace('#message', L_LIBGD_NOT_INSTALLED, $output);
+			echo $output;
+		}
 	}
 
 	/**
@@ -188,10 +274,10 @@ class plxUtils {
 	 **/
 	public static function removeAccents($str,$charset='utf-8') {
 
-	    $str = htmlentities($str, ENT_NOQUOTES, $charset);
+		$str = htmlentities($str, ENT_NOQUOTES, $charset);
 	    $str = preg_replace('#\&([A-za-z])(?:acute|cedil|circ|grave|ring|tilde|uml|uro)\;#', '\1', $str);
 	    $str = preg_replace('#\&([A-za-z]{2})(?:lig)\;#', '\1', $str); # pour les ligatures e.g. '&oelig;'
-	    $str = preg_replace('#\&[^;]+\;#', '', $str); # supprime les autres caractères    
+	    $str = preg_replace('#\&[^;]+\;#', '', $str); # supprime les autres caractères
 	    return $str;
 	}
 
@@ -239,9 +325,9 @@ class plxUtils {
 
 	/**
 	 * Méthode qui écrit dans un fichier
-	 * Mode écriture seule; place le pointeur de fichier au début du fichier et réduit la taille du fichier à 0. Si le fichier n'existe pas, on tente de le créer. 
+	 * Mode écriture seule; place le pointeur de fichier au début du fichier et réduit la taille du fichier à 0. Si le fichier n'existe pas, on tente de le créer.
 	 *
-	 * @param	xml					contenu du fichier 
+	 * @param	xml					contenu du fichier
 	 * @param	filename			emplacement et nom du fichier
 	 * @return	boolean				retourne vrai si l'écriture s'est bien déroulée
 	 **/
@@ -268,6 +354,20 @@ class plxUtils {
 	}
 
 	/**
+	 * Méthode qui formate l'affichage de la taille d'un fichier
+	 *
+	 * @param	filsize				taille en octets d'un fichier
+	 * @return	string				chaine d'affichage formatée
+	 **/
+	public static function formatFilesize($bytes) {
+
+		if ($bytes < 1024) return $bytes.' B';
+		elseif ($bytes < 1048576) return round($bytes / 1024, 2).' Kb';
+		elseif ($bytes < 1073741824) return round($bytes / 1048576, 2).' Mb';
+
+	}
+
+	/**
 	 * Méthode qui crée la miniature d'une image
 	 *
 	 * @param	filename			emplacement et nom du fichier source
@@ -275,10 +375,13 @@ class plxUtils {
 	 * @param	width				largeur de la miniature
 	 * @param	height				hauteur de la miniature
 	 * @param	quality				qualité de l'image
-	 * @return	null
+	 * @param	ratio				si vrai conserve le ratio largeur x hauteur
+	 * @return	boolean				vrai si image créée
 	 **/
 	public static function makeThumb($filename, $filename_out, $width, $height, $quality) {
-	
+
+		if(!function_exists('imagecreatetruecolor')) return false;
+
 		# Informations sur l'image
 		list($width_orig,$height_orig,$type) = getimagesize($filename);
 
@@ -295,10 +398,10 @@ class plxUtils {
 			$width = $width_orig;
 			$height = $height_orig;
 		}
-		
+
 		# Création de l'image
 		$image_p = imagecreatetruecolor($width,$height);
-	
+
 		if($type == 1) {
 			$image = imagecreatefromgif($filename);
 			$color = imagecolortransparent($image_p, imagecolorallocatealpha($image_p, 0, 0, 0, 127));
@@ -309,7 +412,7 @@ class plxUtils {
 		}
 		elseif($type == 2) {
 			$image = imagecreatefromjpeg($filename);
-			imagecopyresized($image_p, $image, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
+			imagecopyresampled($image_p, $image, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
 			imagejpeg($image_p, $filename_out, $quality);
 		}
 		elseif($type == 3) {
@@ -320,8 +423,8 @@ class plxUtils {
 			imagecopyresampled($image_p, $image, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
 			imagepng($image_p, $filename_out);
 		}
-		
-		return is_readable($filename_out);
+
+		return is_file($filename_out);
 	}
 
 	/**
@@ -359,12 +462,12 @@ class plxUtils {
 	 **/
 	public static function charAleatoire($taille='10') {
 
-		$string = '';	 
-		$chaine = 'abcdefghijklmnpqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';	 
-		mt_srand((float)microtime()*1000000);	 
+		$string = '';
+		$chaine = 'abcdefghijklmnpqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		mt_srand((float)microtime()*1000000);
 		for($i=0; $i<$taille; $i++)
-			$string .= $chaine[ mt_rand()%strlen($chaine) ];	 
-		return $string;	 
+			$string .= $chaine[ mt_rand()%strlen($chaine) ];
+		return $string;
 	}
 
 	/**
@@ -385,7 +488,7 @@ class plxUtils {
 			return strlen($str) > $length ? substr($str, 0, $length-strlen($add_text)).$add_text : $str;
 		}
 	}
-	
+
 	/**
 	 * Méthode qui retourne une chaine de caractères formatée en fonction du charset
 	 *
@@ -396,7 +499,19 @@ class plxUtils {
 
 		return htmlspecialchars($str,ENT_QUOTES,PLX_CHARSET);
 	}
-	
+
+	/**
+	 * Méthode qui retourne une chaine de caractères nettoyée des cdata
+	 *
+	 * @param	str			chaine de caractères à nettoyer
+	 * @return	string		chaine de caractères nettoyée
+	 * @author	Stephane F
+	 **/
+	public static function cdataCheck($str) {
+		$str = str_ireplace('!CDATA', '&#33;CDATA', $str);
+		return str_replace(']]>', ']]&gt;', $str);
+	}
+
 	/**
 	 * Méthode qui retourne une chaine de caractères HTML en fonction du charset
 	 *
@@ -409,173 +524,11 @@ class plxUtils {
 	}
 
 	/**
-	 * Méthode qui recherche un fichier dans le dossier 'admin/sous_navigation' en fonction du nom de la page affichée
-	 *
-	 * @return	string		nom du fichier de sous navigation
-	 **/
-	public static function getSousNav() {
-
-		$file = preg_split('/[\/]/',$_SERVER['SCRIPT_NAME']);
-		$script = array_pop($file);
-		$template = preg_split('/[_.]/',$script);
-		if(file_exists('sous_navigation/'.$template[0].'.php'))
-			return 'sous_navigation/'.$template[0].'.php';
-		if(file_exists('sous_navigation/'.$template[0].'s.php'))
-			return 'sous_navigation/'.$template[0].'s.php';
-	}
-
-	/**
-	 * Méthode qui détermine si on navigue à partir d'un mobile
-	 *
-	 * @return	boolean		retourne vrai si on est sur un mobile
-	 *
-	 * This code is from http://detectmobilebrowsers.mobi/ - please do not republish it without due credit and hyperlink to http://detectmobilebrowsers.mobi/ really, i'd prefer it if it wasn't republished in full as that way it's main source is it's homepage and it's always kept up to date
-	 * For help generating the function call visit http://detectmobilebrowsers.mobi/ and use the function generator. If you need serious help with this please drop me an email to andy@andymoore.info with the subject 'DETECTION CODE PAID SUPPORT REUQEST' with a detailed outline of what you need and how I can help and I will get back to you with a proposal for integration.
-	 * Published by Andy Moore - .mobi certified mobile web developer - http://andymoore.info/
-	 * This code is free to download and use on non-profit websites, if your website makes a profit or you require support using this code please upgrade.
-	 * Please upgrade for use on commercial websites http://detectmobilebrowsers.mobi/?volume=49999
-	 * To submit a support request please forward your PayPal receipt with your questions to the email address you sent the money to and I will endeavour to get back to you. It might take me a few days but I reply to all support issues with as much helpful info as I can provide. Though really everything is published on the site.
-	 * The function has eight parameters that can be passed to it which define the way it handles different scenarios. These paramaters are:
-		* iPhone - Set to true to treat iPhones as mobiles, false to treat them like full browsers or set a URL (including http://) to redirect iPhones and iPods to.
-		* Android - Set to true to treat Android handsets as mobiles, false to treat them like full browsers or set a URL (including http://) to redirect Android and Google mobile users to.
-		* Opera Mini - Set to true to treat Opera Mini like a mobile, false to treat it like full browser or set a URL (including http://) to redirect Opera Mini users to.
-		* Blackberry - Set to true to treat Blackberry like a mobile, false to treat it like full browser or set a URL (including http://) to redirect Blackberry users to.
-		* Palm - Set to true to treat Palm OS like a mobile, false to treat it like full browser or set a URL (including http://) to redirect Palm OS users to.
-		* Windows - Set to true to treat Windows Mobiles like a mobile, false to treat it like full browser or set a URL (including http://) to redirect Windows Mobile users to.
-		* Mobile Redirect URL - This should be full web address (including http://) of the site (or page) you want to send mobile visitors to. Leaving this blank will make the script return true when it detects a mobile.
-		* Desktop Redirect URL - This should be full web address (including http://) of the site (or page) you want to send non-mobile visitors to. Leaving this blank will make the script return false when it fails to detect a mobile.
-	 * Change Log:
-		* 25.11.08 - Added Amazon's Kindle to the pipe seperated array
-		* 27.11.08 - Added support for Blackberry options
-		* 27.01.09 - Added usage samples & help with PHP in HTML - .zip
-		* 09.03.09 - Added support for Windows Mobile options
-		* 09.03.09 - Removed 'ppc;'=>'ppc;', from array to reduce false positives
-		* 09.03.09 - Added support for Palm OS options
-		* 09.03.09 - Added sample .htaccess html.html and help.html files to download
-		* 16.03.09 - Edited sample .htaccess file - now works with GoDaddy
-		* 14.08.09 - Reduced false positives
-		* 14.08.09 - Added Palm Pre
-		* 14.08.09 - Added answer about search engine spiders
-		* 14.08.09 - Added status variable to report back it's findings for debugging
-		* 14.08.09 - Added Torch Mobile Iris Browser to Windows Mobile section
-		* 14.08.09 - Added HTC Touch 3G to Windows Mobile section
-		* 14.08.09 - Added help links to PHP header and setup PHP in HTML
-		* 14.08.09 - Added six usage examples
-		* 15.08.09 - Checked against the list of agents in the WURFL - 99.27% detected!
-			* 11,489 mobile user agent strings checked
-			* 99.27% detection rate after a number of small changes
-			* Those user agent strings listed that are not detected are either robots or too generic for user agent detection
-			* Any mobiles not detected by their user agent would most likely return true as they'd be detected by the headers they add.
-		* 20.11.09 - Removed PDA from the piped array to stop false positives
-		* 22.12.09 - Moved the site to a server hosted at Rackspace
-		* 23.12.09 - Added support for Mozilla Fennec
-		* 23.04.10 - Added support for the Apple iPad
-			* Mozilla/5.0 (iPad; U; CPU OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B367 Safari/531.21.10
-			* Mozilla/5.0 (iPad; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7D11
-			* Mozilla/5.0 (iPad; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B317 Safari/531.21.10
-		* 23.04.10 - Changed all eregi function calls to preg_match
-		* 23.04.10 - Added two more examples
-			* Added example-7.php which allows switching between desktop and mobile versions
-			* Added example-8.php which shows why the script made the decision it did
-		* No longer using include, using require_once instead
-		bug fixes with many thanks and much credit to http://www.punchkickinteractive.com/ - thanks Ryan!
-	 */
-	public static function mobileDetect($iphone=true,$ipad=true,$android=true,$opera=true,$blackberry=true,$palm=true,$windows=true,$mobileredirect=false,$desktopredirect=false){
-		$mobile_browser   = false; // set mobile browser as false till we can prove otherwise
-		$user_agent       = $_SERVER['HTTP_USER_AGENT']; // get the user agent value - this should be cleaned to ensure no nefarious input gets executed
-		$accept           = $_SERVER['HTTP_ACCEPT']; // get the content accept value - this should be cleaned to ensure no nefarious input gets executed
-
-		switch(true){ // using a switch against the following statements which could return true is more efficient than the previous method of using if statements
-			case (preg_match('/ipad/i',$user_agent)); // we find the word ipad in the user agent
-				$mobile_browser = $ipad; // mobile browser is either true or false depending on the setting of ipad when calling the function
-				$status = 'Apple iPad';
-				if(substr($ipad,0,4)=='http'){ // does the value of ipad resemble a url
-					$mobileredirect = $ipad; // set the mobile redirect url to the url value stored in the ipad value
-				} // ends the if for ipad being a url
-				break; // break out and skip the rest if we've had a match on the ipad // this goes before the iphone to catch it else it would return on the iphone instead
-			case (preg_match('/ipod/i',$user_agent)||preg_match('/iphone/i',$user_agent)); // we find the words iphone or ipod in the user agent
-				$mobile_browser = $iphone; // mobile browser is either true or false depending on the setting of iphone when calling the function
-				$status = 'Apple';
-				if(substr($iphone,0,4)=='http'){ // does the value of iphone resemble a url
-					$mobileredirect = $iphone; // set the mobile redirect url to the url value stored in the iphone value
-				} // ends the if for iphone being a url
-				break; // break out and skip the rest if we've had a match on the iphone or ipod
-			case (preg_match('/android/i',$user_agent));  // we find android in the user agent
-				$mobile_browser = $android; // mobile browser is either true or false depending on the setting of android when calling the function
-				$status = 'Android';
-				if(substr($android,0,4)=='http'){ // does the value of android resemble a url
-					$mobileredirect = $android; // set the mobile redirect url to the url value stored in the android value
-				} // ends the if for android being a url
-				break; // break out and skip the rest if we've had a match on android
-			case (preg_match('/opera mini/i',$user_agent)); // we find opera mini in the user agent
-				$mobile_browser = $opera; // mobile browser is either true or false depending on the setting of opera when calling the function
-				$status = 'Opera';
-				if(substr($opera,0,4)=='http'){ // does the value of opera resemble a rul
-					$mobileredirect = $opera; // set the mobile redirect url to the url value stored in the opera value
-				} // ends the if for opera being a url 
-				break; // break out and skip the rest if we've had a match on opera
-			case (preg_match('/blackberry/i',$user_agent)); // we find blackberry in the user agent
-				$mobile_browser = $blackberry; // mobile browser is either true or false depending on the setting of blackberry when calling the function
-				$status = 'Blackberry';
-				if(substr($blackberry,0,4)=='http'){ // does the value of blackberry resemble a rul
-					$mobileredirect = $blackberry; // set the mobile redirect url to the url value stored in the blackberry value
-				} // ends the if for blackberry being a url 
-				break; // break out and skip the rest if we've had a match on blackberry
-			case (preg_match('/(pre\/|palm os|palm|hiptop|avantgo|plucker|xiino|blazer|elaine)/i',$user_agent)); // we find palm os in the user agent - the i at the end makes it case insensitive
-				$mobile_browser = $palm; // mobile browser is either true or false depending on the setting of palm when calling the function
-				$status = 'Palm';
-				if(substr($palm,0,4)=='http'){ // does the value of palm resemble a rul
-					$mobileredirect = $palm; // set the mobile redirect url to the url value stored in the palm value
-				} // ends the if for palm being a url 
-				break; // break out and skip the rest if we've had a match on palm os
-			case (preg_match('/(iris|3g_t|windows ce|opera mobi|windows ce; smartphone;|windows ce; iemobile)/i',$user_agent)); // we find windows mobile in the user agent - the i at the end makes it case insensitive
-				$mobile_browser = $windows; // mobile browser is either true or false depending on the setting of windows when calling the function
-				$status = 'Windows Smartphone';
-				if(substr($windows,0,4)=='http'){ // does the value of windows resemble a rul
-					$mobileredirect = $windows; // set the mobile redirect url to the url value stored in the windows value
-				} // ends the if for windows being a url 
-				break; // break out and skip the rest if we've had a match on windows
-			case (preg_match('/(mini 9.5|vx1000|lge |m800|e860|u940|ux840|compal|wireless| mobi|ahong|lg380|lgku|lgu900|lg210|lg47|lg920|lg840|lg370|sam-r|mg50|s55|g83|t66|vx400|mk99|d615|d763|el370|sl900|mp500|samu3|samu4|vx10|xda_|samu5|samu6|samu7|samu9|a615|b832|m881|s920|n210|s700|c-810|_h797|mob-x|sk16d|848b|mowser|s580|r800|471x|v120|rim8|c500foma:|160x|x160|480x|x640|t503|w839|i250|sprint|w398samr810|m5252|c7100|mt126|x225|s5330|s820|htil-g1|fly v71|s302|-x113|novarra|k610i|-three|8325rc|8352rc|sanyo|vx54|c888|nx250|n120|mtk |c5588|s710|t880|c5005|i;458x|p404i|s210|c5100|teleca|s940|c500|s590|foma|samsu|vx8|vx9|a1000|_mms|myx|a700|gu1100|bc831|e300|ems100|me701|me702m-three|sd588|s800|8325rc|ac831|mw200|brew |d88|htc\/|htc_touch|355x|m50|km100|d736|p-9521|telco|sl74|ktouch|m4u\/|me702|8325rc|kddi|phone|lg |sonyericsson|samsung|240x|x320|vx10|nokia|sony cmd|motorola|up.browser|up.link|mmp|symbian|smartphone|midp|wap|vodafone|o2|pocket|kindle|mobile|psp|treo)/i',$user_agent)); // check if any of the values listed create a match on the user agent - these are some of the most common terms used in agents to identify them as being mobile devices - the i at the end makes it case insensitive
-				$mobile_browser = true; // set mobile browser to true
-				$status = 'Mobile matched on piped preg_match';
-				break; // break out and skip the rest if we've preg_match on the user agent returned true 
-			case ((strpos($accept,'text/vnd.wap.wml')>0)||(strpos($accept,'application/vnd.wap.xhtml+xml')>0)); // is the device showing signs of support for text/vnd.wap.wml or application/vnd.wap.xhtml+xml
-				$mobile_browser = true; // set mobile browser to true
-				$status = 'Mobile matched on content accept header';
-				break; // break out and skip the rest if we've had a match on the content accept headers
-			case (isset($_SERVER['HTTP_X_WAP_PROFILE'])||isset($_SERVER['HTTP_PROFILE'])); // is the device giving us a HTTP_X_WAP_PROFILE or HTTP_PROFILE header - only mobile devices would do this
-				$mobile_browser = true; // set mobile browser to true
-				$status = 'Mobile matched on profile headers being set';
-				break; // break out and skip the final step if we've had a return true on the mobile specfic headers
-			case (in_array(strtolower(substr($user_agent,0,4)),array('1207'=>'1207','3gso'=>'3gso','4thp'=>'4thp','501i'=>'501i','502i'=>'502i','503i'=>'503i','504i'=>'504i','505i'=>'505i','506i'=>'506i','6310'=>'6310','6590'=>'6590','770s'=>'770s','802s'=>'802s','a wa'=>'a wa','acer'=>'acer','acs-'=>'acs-','airn'=>'airn','alav'=>'alav','asus'=>'asus','attw'=>'attw','au-m'=>'au-m','aur '=>'aur ','aus '=>'aus ','abac'=>'abac','acoo'=>'acoo','aiko'=>'aiko','alco'=>'alco','alca'=>'alca','amoi'=>'amoi','anex'=>'anex','anny'=>'anny','anyw'=>'anyw','aptu'=>'aptu','arch'=>'arch','argo'=>'argo','bell'=>'bell','bird'=>'bird','bw-n'=>'bw-n','bw-u'=>'bw-u','beck'=>'beck','benq'=>'benq','bilb'=>'bilb','blac'=>'blac','c55/'=>'c55/','cdm-'=>'cdm-','chtm'=>'chtm','capi'=>'capi','cond'=>'cond','craw'=>'craw','dall'=>'dall','dbte'=>'dbte','dc-s'=>'dc-s','dica'=>'dica','ds-d'=>'ds-d','ds12'=>'ds12','dait'=>'dait','devi'=>'devi','dmob'=>'dmob','doco'=>'doco','dopo'=>'dopo','el49'=>'el49','erk0'=>'erk0','esl8'=>'esl8','ez40'=>'ez40','ez60'=>'ez60','ez70'=>'ez70','ezos'=>'ezos','ezze'=>'ezze','elai'=>'elai','emul'=>'emul','eric'=>'eric','ezwa'=>'ezwa','fake'=>'fake','fly-'=>'fly-','fly_'=>'fly_','g-mo'=>'g-mo','g1 u'=>'g1 u','g560'=>'g560','gf-5'=>'gf-5','grun'=>'grun','gene'=>'gene','go.w'=>'go.w','good'=>'good','grad'=>'grad','hcit'=>'hcit','hd-m'=>'hd-m','hd-p'=>'hd-p','hd-t'=>'hd-t','hei-'=>'hei-','hp i'=>'hp i','hpip'=>'hpip','hs-c'=>'hs-c','htc '=>'htc ','htc-'=>'htc-','htca'=>'htca','htcg'=>'htcg','htcp'=>'htcp','htcs'=>'htcs','htct'=>'htct','htc_'=>'htc_','haie'=>'haie','hita'=>'hita','huaw'=>'huaw','hutc'=>'hutc','i-20'=>'i-20','i-go'=>'i-go','i-ma'=>'i-ma','i230'=>'i230','iac'=>'iac','iac-'=>'iac-','iac/'=>'iac/','ig01'=>'ig01','im1k'=>'im1k','inno'=>'inno','iris'=>'iris','jata'=>'jata','java'=>'java','kddi'=>'kddi','kgt'=>'kgt','kgt/'=>'kgt/','kpt '=>'kpt ','kwc-'=>'kwc-','klon'=>'klon','lexi'=>'lexi','lg g'=>'lg g','lg-a'=>'lg-a','lg-b'=>'lg-b','lg-c'=>'lg-c','lg-d'=>'lg-d','lg-f'=>'lg-f','lg-g'=>'lg-g','lg-k'=>'lg-k','lg-l'=>'lg-l','lg-m'=>'lg-m','lg-o'=>'lg-o','lg-p'=>'lg-p','lg-s'=>'lg-s','lg-t'=>'lg-t','lg-u'=>'lg-u','lg-w'=>'lg-w','lg/k'=>'lg/k','lg/l'=>'lg/l','lg/u'=>'lg/u','lg50'=>'lg50','lg54'=>'lg54','lge-'=>'lge-','lge/'=>'lge/','lynx'=>'lynx','leno'=>'leno','m1-w'=>'m1-w','m3ga'=>'m3ga','m50/'=>'m50/','maui'=>'maui','mc01'=>'mc01','mc21'=>'mc21','mcca'=>'mcca','medi'=>'medi','meri'=>'meri','mio8'=>'mio8','mioa'=>'mioa','mo01'=>'mo01','mo02'=>'mo02','mode'=>'mode','modo'=>'modo','mot '=>'mot ','mot-'=>'mot-','mt50'=>'mt50','mtp1'=>'mtp1','mtv '=>'mtv ','mate'=>'mate','maxo'=>'maxo','merc'=>'merc','mits'=>'mits','mobi'=>'mobi','motv'=>'motv','mozz'=>'mozz','n100'=>'n100','n101'=>'n101','n102'=>'n102','n202'=>'n202','n203'=>'n203','n300'=>'n300','n302'=>'n302','n500'=>'n500','n502'=>'n502','n505'=>'n505','n700'=>'n700','n701'=>'n701','n710'=>'n710','nec-'=>'nec-','nem-'=>'nem-','newg'=>'newg','neon'=>'neon','netf'=>'netf','noki'=>'noki','nzph'=>'nzph','o2 x'=>'o2 x','o2-x'=>'o2-x','opwv'=>'opwv','owg1'=>'owg1','opti'=>'opti','oran'=>'oran','p800'=>'p800','pand'=>'pand','pg-1'=>'pg-1','pg-2'=>'pg-2','pg-3'=>'pg-3','pg-6'=>'pg-6','pg-8'=>'pg-8','pg-c'=>'pg-c','pg13'=>'pg13','phil'=>'phil','pn-2'=>'pn-2','pt-g'=>'pt-g','palm'=>'palm','pana'=>'pana','pire'=>'pire','pock'=>'pock','pose'=>'pose','psio'=>'psio','qa-a'=>'qa-a','qc-2'=>'qc-2','qc-3'=>'qc-3','qc-5'=>'qc-5','qc-7'=>'qc-7','qc07'=>'qc07','qc12'=>'qc12','qc21'=>'qc21','qc32'=>'qc32','qc60'=>'qc60','qci-'=>'qci-','qwap'=>'qwap','qtek'=>'qtek','r380'=>'r380','r600'=>'r600','raks'=>'raks','rim9'=>'rim9','rove'=>'rove','s55/'=>'s55/','sage'=>'sage','sams'=>'sams','sc01'=>'sc01','sch-'=>'sch-','scp-'=>'scp-','sdk/'=>'sdk/','se47'=>'se47','sec-'=>'sec-','sec0'=>'sec0','sec1'=>'sec1','semc'=>'semc','sgh-'=>'sgh-','shar'=>'shar','sie-'=>'sie-','sk-0'=>'sk-0','sl45'=>'sl45','slid'=>'slid','smb3'=>'smb3','smt5'=>'smt5','sp01'=>'sp01','sph-'=>'sph-','spv '=>'spv ','spv-'=>'spv-','sy01'=>'sy01','samm'=>'samm','sany'=>'sany','sava'=>'sava','scoo'=>'scoo','send'=>'send','siem'=>'siem','smar'=>'smar','smit'=>'smit','soft'=>'soft','sony'=>'sony','t-mo'=>'t-mo','t218'=>'t218','t250'=>'t250','t600'=>'t600','t610'=>'t610','t618'=>'t618','tcl-'=>'tcl-','tdg-'=>'tdg-','telm'=>'telm','tim-'=>'tim-','ts70'=>'ts70','tsm-'=>'tsm-','tsm3'=>'tsm3','tsm5'=>'tsm5','tx-9'=>'tx-9','tagt'=>'tagt','talk'=>'talk','teli'=>'teli','topl'=>'topl','hiba'=>'hiba','up.b'=>'up.b','upg1'=>'upg1','utst'=>'utst','v400'=>'v400','v750'=>'v750','veri'=>'veri','vk-v'=>'vk-v','vk40'=>'vk40','vk50'=>'vk50','vk52'=>'vk52','vk53'=>'vk53','vm40'=>'vm40','vx98'=>'vx98','virg'=>'virg','vite'=>'vite','voda'=>'voda','vulc'=>'vulc','w3c '=>'w3c ','w3c-'=>'w3c-','wapj'=>'wapj','wapp'=>'wapp','wapu'=>'wapu','wapm'=>'wapm','wig '=>'wig ','wapi'=>'wapi','wapr'=>'wapr','wapv'=>'wapv','wapy'=>'wapy','wapa'=>'wapa','waps'=>'waps','wapt'=>'wapt','winc'=>'winc','winw'=>'winw','wonu'=>'wonu','x700'=>'x700','xda2'=>'xda2','xdag'=>'xdag','yas-'=>'yas-','your'=>'your','zte-'=>'zte-','zeto'=>'zeto','acs-'=>'acs-','alav'=>'alav','alca'=>'alca','amoi'=>'amoi','aste'=>'aste','audi'=>'audi','avan'=>'avan','benq'=>'benq','bird'=>'bird','blac'=>'blac','blaz'=>'blaz','brew'=>'brew','brvw'=>'brvw','bumb'=>'bumb','ccwa'=>'ccwa','cell'=>'cell','cldc'=>'cldc','cmd-'=>'cmd-','dang'=>'dang','doco'=>'doco','eml2'=>'eml2','eric'=>'eric','fetc'=>'fetc','hipt'=>'hipt','http'=>'http','ibro'=>'ibro','idea'=>'idea','ikom'=>'ikom','inno'=>'inno','ipaq'=>'ipaq','jbro'=>'jbro','jemu'=>'jemu','java'=>'java','jigs'=>'jigs','kddi'=>'kddi','keji'=>'keji','kyoc'=>'kyoc','kyok'=>'kyok','leno'=>'leno','lg-c'=>'lg-c','lg-d'=>'lg-d','lg-g'=>'lg-g','lge-'=>'lge-','libw'=>'libw','m-cr'=>'m-cr','maui'=>'maui','maxo'=>'maxo','midp'=>'midp','mits'=>'mits','mmef'=>'mmef','mobi'=>'mobi','mot-'=>'mot-','moto'=>'moto','mwbp'=>'mwbp','mywa'=>'mywa','nec-'=>'nec-','newt'=>'newt','nok6'=>'nok6','noki'=>'noki','o2im'=>'o2im','opwv'=>'opwv','palm'=>'palm','pana'=>'pana','pant'=>'pant','pdxg'=>'pdxg','phil'=>'phil','play'=>'play','pluc'=>'pluc','port'=>'port','prox'=>'prox','qtek'=>'qtek','qwap'=>'qwap','rozo'=>'rozo','sage'=>'sage','sama'=>'sama','sams'=>'sams','sany'=>'sany','sch-'=>'sch-','sec-'=>'sec-','send'=>'send','seri'=>'seri','sgh-'=>'sgh-','shar'=>'shar','sie-'=>'sie-','siem'=>'siem','smal'=>'smal','smar'=>'smar','sony'=>'sony','sph-'=>'sph-','symb'=>'symb','t-mo'=>'t-mo','teli'=>'teli','tim-'=>'tim-','tosh'=>'tosh','treo'=>'treo','tsm-'=>'tsm-','upg1'=>'upg1','upsi'=>'upsi','vk-v'=>'vk-v','voda'=>'voda','vx52'=>'vx52','vx53'=>'vx53','vx60'=>'vx60','vx61'=>'vx61','vx70'=>'vx70','vx80'=>'vx80','vx81'=>'vx81','vx83'=>'vx83','vx85'=>'vx85','wap-'=>'wap-','wapa'=>'wapa','wapi'=>'wapi','wapp'=>'wapp','wapr'=>'wapr','webc'=>'webc','whit'=>'whit','winw'=>'winw','wmlb'=>'wmlb','xda-'=>'xda-',))); // check against a list of trimmed user agents to see if we find a match
-				$mobile_browser = true; // set mobile browser to true
-				$status = 'Mobile matched on in_array';
-				break; // break even though it's the last statement in the switch so there's nothing to break away from but it seems better to include it than exclude it
-			default;
-				$mobile_browser = false; // set mobile browser to false
-				$status = 'Desktop / full capability browser';
-				break; // break even though it's the last statement in the switch so there's nothing to break away from but it seems better to include it than exclude it
-		} // ends the switch 
-
-		// if redirect (either the value of the mobile or desktop redirect depending on the value of $mobile_browser) is true redirect else we return the status of $mobile_browser
-		if($redirect = ($mobile_browser==true) ? $mobileredirect : $desktopredirect){
-			header('Location: '.$redirect); // redirect to the right url for this device
-			exit;
-		} else { 
-			// a couple of folkas have asked about the status - that's there to help you debug and understand what the script is doing
-			if($mobile_browser==''){
-				return $mobile_browser; // will return either true or false 
-			}else{
-				return array($mobile_browser,$status); // is a mobile so we are returning an array ['0'] is true ['1'] is the $status value
-			}
-		}
-	} // ends function mobile_device_detect
-
-	/**
 	 * Méthode qui retourne le type de compression disponible
 	 *
 	 * @return	stout
-	 **/	
+	 * @author	Stephane F.
+	 **/
 	public static function httpEncoding() {
 		if( headers_sent() ){
 			$encoding = false;
@@ -590,52 +543,296 @@ class plxUtils {
 	}
 
 	/**
-	 * Méthode qui applique la compression gzip avant affichage
-	 *
-	 * @param	rel2bas		conversion des urls relatives en url absolues. Si conversion contient la racine du site
-	 * @return	stout
-	 * @return	stout
-	 **/
-	public static function ob_gzipped_page($rel2abs=false) {
-
-		if($encoding=plxUtils::httpEncoding()) {
-			$contents = ob_get_clean();
-			if($rel2abs) $contents = plxUtils::rel2abs($rel2abs, $contents);
-			header('Content-Encoding: '.$encoding);
-			echo("\x1f\x8b\x08\x00\x00\x00\x00\x00");
-			$size = strlen($contents);
-			$contents = gzcompress($contents, 9);
-			$contents = substr($contents, 0, $size);
-		} else {
-			$contents = ob_get_clean();
-			if($rel2abs) $contents = plxUtils::rel2abs($rel2abs, $contents);
-		}
-		echo $contents;
-		exit();
-	}
-
-	/**
 	 * Méthode qui converti les liens relatifs en liens absolus
 	 *
 	 * @param	base		url du site qui sera rajoutée devant les liens relatifs
 	 * @param	html		chaine de caractères à convertir
+	 * @param	dirs		configuration des dossiers issues du fichier parametres.xml
 	 * @return	string		chaine de caractères modifiée
+	 * @author	Stephane F., Amaury Graillat
 	 **/
 	public static function rel2abs($base, $html) {
 
+		// url des plugins
+		$html = preg_replace('@<([^>]*) (href|src)=(["\'])[\.]/plugins@i', '<$1 $2=$3'.$base.'plugins', $html);
 		// generate server-only replacement for root-relative URLs
-		$server = preg_replace('@^([^\:]*)://([^/*]*)(/|$).*@', '\1://\2/', $base);
-		// on repart les liens ne commençant que part #
+		$server = preg_replace('@^([^:]+)://([^/]+)(/|$).*@', '\1://\2/', $base);
+		// on repare les liens ne commençant que part #
 		$get = plxUtils::getGets();
-		$html = preg_replace('@\<([^>]*) (href|src)="(#[^"]*)"@i', '<\1 \2="' . $get . '\3"', $html);
+		$html = preg_replace('@\<([^>]*) (href|src)="#@i', '<\1 \2="' . $get . '#', $html);
 		// replace root-relative URLs
-		$html = preg_replace('@\<([^>]*) (href|src)="/([^"]*)"@i', '<\1 \2="' . $server . '\3"', $html);
+		$html = preg_replace('@\<([^>]*) (href|src)=".?/@i', '<\1 \2="' . $server, $html);
 		// replace base-relative URLs
-		$html = preg_replace('@\<([^>]*) (href|src)="(([^\:"])*|([^"]*:[^/"].*))"@i', '<\1 \2="' . $base . '\3"', $html);
-
+		$html = preg_replace('@\<([^>]*) (href|src)="([^:"]*|[^:"]*:[^/"][^"]*)"@i', '<\1 \2="' . $base . '\3"', $html);
+		// unreplace fully qualified URLs with proto: that were wrongly added $base
+		$html = preg_replace('@\<([^>]*) (href|src)="'. $base . '([^:"]+):@i', '<\1 \2="\3:', $html);
 		return $html;
 
 	}
 
+	/**
+	 * Méthode qui retourn la liste des langues disponibles dans un tableau
+	 *
+	 * @return	string		chaine de caractères modifiée
+	 * @author	Stephane F.
+	 **/
+	public static function getLangs() {
+		$array = array();
+		$glob = plxGlob::getInstance(PLX_CORE.'lang', true);
+		if($aFolders = $glob->query("/[a-z]+/i")) {
+			foreach($aFolders as $folder) {
+				$array[$folder] = $folder;
+			}
+		}
+		ksort($array);
+		return $array;
+	}
+
+	/**
+	 * Méthode qui empeche de mettre en cache une page
+	 *
+	 * @return	stdio
+	 * @author	Stephane F.
+	 **/
+	public static function cleanHeaders() {
+		@header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
+		@header('Last-Modified: '.gmdate( 'D, d M Y H:i:s' ).' GMT');
+		@header('Cache-Control: no-cache, must-revalidate, max-age=0');
+		@header('Cache: no-cache');
+		@header('Pragma: no-cache');
+		@header('Content-Type: text/html; charset='.PLX_CHARSET);
+	}
+
+	/**
+	* Méthode d'envoi de mail
+	*
+	* @param	name	string 			Nom de l'expéditeur
+	* @param	from	string 			Email de l'expéditeur
+	* @param	to		array/string	Adresse(s) du(des) destinataires(s)
+	* @param	subject	string			Objet du mail
+	* @param	body	string			contenu du mail
+	* @return			boolean			renvoie FAUX en cas d'erreur d'envoi
+	* @author	Amaury Graillat
+	**/
+	public static function sendMail($name, $from, $to, $subject, $body, $contentType="text", $cc=false, $bcc=false) {
+
+		if(is_array($to))
+			$to = implode(', ', $to);
+		if(is_array($cc))
+			$cc = implode(', ', $cc);
+		if(is_array($bcc))
+			$bcc = implode(', ', $bcc);
+
+		$headers  = "From: ".$name." <".$from.">\r\n";
+		$headers .= 'MIME-Version: 1.0'."\r\n";
+		// Content-Type
+		if($contentType == 'html')
+			$headers .= 'Content-type: text/html; charset="'.PLX_CHARSET.'"'."\r\n";
+		else
+			$headers .= 'Content-type: text/plain; charset="'.PLX_CHARSET.'"'."\r\n";
+
+		$headers .= 'Content-transfer-encoding: 8bit'."\r\n";
+
+		if($cc != "")
+			$headers .= 'Cc: '.$cc."\r\n";
+		if($bcc != "")
+			$headers .= 'Bcc: '.$bcc."\r\n";
+
+		return @mail($to, $subject, $body, $headers);
+	}
+
+	/**
+	* Méthode qui formate un lien pour la barre des menus
+	*
+	* @param	name	string 			titre du menu
+	* @param	href	string 			lien du menu
+	* @param	title	string			contenu de la balise title
+	* @param	class	string			contenu de la balise class
+	* @param	onclick	string			contenu de la balise onclick
+	* @param	extra	string			extra texte à aficher
+	* @return			string			balise <a> formatée
+	* @author	Stephane F.
+	**/
+	public static function formatMenu($name, $href, $title=false, $class=false, $onclick=false, $extra='', $highlight=true) {
+		$menu = '';
+		$basename = explode('?', basename($href));
+		$active = ($highlight AND ($basename[0] == basename($_SERVER['SCRIPT_NAME']))) ? ' class="active"':'';
+		$title = $title ? ' title="'.$title.'"':'';
+		$class = $class ? ' class="'.$class.'"':'';
+		$onclick = $onclick ? ' onclick="'.$onclick.'"':'';
+		$menu = '<li'.$active.'><a href="'.$href.'"'.$onclick.$class.$title.'>'.$name.'</a>'.$extra.'</li>';
+		return $menu;
+	}
+
+	/**
+	 * Truncates text.
+	 *
+	 * Cuts a string to the length of $length and replaces the last characters
+	 * with the ending if the text is longer than length.
+	 *
+	 * @param string  $text String to truncate.
+	 * @param integer $length Length of returned string, including ellipsis.
+	 * @param string  $ending Ending to be appended to the trimmed string.
+	 * @param boolean $exact If false, $text will not be cut mid-word
+	 * @param boolean $considerHtml If true, HTML tags would be handled correctly
+	 * @return string Trimmed string.
+	*/
+    public static function truncate($text, $length = 100, $ending = '...', $exact = true, $considerHtml = false) {
+        if ($considerHtml) {
+            // if the plain text is shorter than the maximum length, return the whole text
+            if (strlen(preg_replace('/<.*?>/', '', $text)) <= $length) {
+                return $text;
+            }
+
+            // splits all html-tags to scanable lines
+            preg_match_all('/(<.+?>)?([^<>]*)/s', $text, $lines, PREG_SET_ORDER);
+
+            $total_length = strlen($ending);
+            $open_tags = array();
+            $truncate = '';
+
+            foreach ($lines as $line_matchings) {
+                // if there is any html-tag in this line, handle it and add it (uncounted) to the output
+                if (!empty($line_matchings[1])) {
+                    // if it's an "empty element" with or without xhtml-conform closing slash (f.e. <br/>)
+                    if (preg_match('/^<(\s*.+?\/\s*|\s*(img|br|input|hr|area|base|basefont|col|frame|isindex|link|meta|param)(\s.+?)?)>$/is', $line_matchings[1])) {
+                        // do nothing
+                    // if tag is a closing tag (f.e. </b>)
+                    } else if (preg_match('/^<\s*\/([^\s]+?)\s*>$/s', $line_matchings[1], $tag_matchings)) {
+                        // delete tag from $open_tags list
+                        $pos = array_search($tag_matchings[1], $open_tags);
+                        if ($pos !== false) {
+                            unset($open_tags[$pos]);
+                        }
+                    // if tag is an opening tag (f.e. <b>)
+                    } else if (preg_match('/^<\s*([^\s>!]+).*?>$/s', $line_matchings[1], $tag_matchings)) {
+                        // add tag to the beginning of $open_tags list
+                        array_unshift($open_tags, strtolower($tag_matchings[1]));
+                    }
+                    // add html-tag to $truncate'd text
+                    $truncate .= $line_matchings[1];
+                }
+
+                // calculate the length of the plain text part of the line; handle entities as one character
+                $content_length = strlen(preg_replace('/&[0-9a-z]{2,8};|&#[0-9]{1,7};|&#x[0-9a-f]{1,6};/i', ' ', $line_matchings[2]));
+                if ($total_length+$content_length> $length) {
+                    // the number of characters which are left
+                    $left = $length - $total_length;
+                    $entities_length = 0;
+                    // search for html entities
+                    if (preg_match_all('/&[0-9a-z]{2,8};|&#[0-9]{1,7};|&#x[0-9a-f]{1,6};/i', $line_matchings[2], $entities, PREG_OFFSET_CAPTURE)) {
+                        // calculate the real length of all entities in the legal range
+                        foreach ($entities[0] as $entity) {
+                            if ($entity[1]+1-$entities_length <= $left) {
+                                $left--;
+                                $entities_length += strlen($entity[0]);
+                            } else {
+                                // no more characters left
+                                break;
+                            }
+                        }
+                    }
+                    $truncate .= substr($line_matchings[2], 0, $left+$entities_length);
+                    // maximum lenght is reached, so get off the loop
+                    break;
+                } else {
+                    $truncate .= $line_matchings[2];
+                    $total_length += $content_length;
+                }
+
+                // if the maximum length is reached, get off the loop
+                if($total_length>= $length) {
+                    break;
+                }
+            }
+        } else {
+            if (strlen($text) <= $length) {
+                return $text;
+            } else {
+                $truncate = substr($text, 0, $length - strlen($ending));
+            }
+        }
+
+        // if the words shouldn't be cut in the middle...
+        if (!$exact) {
+            // ...search the last occurance of a space...
+            $spacepos = strrpos($truncate, ' ');
+            if (isset($spacepos)) {
+                // ...and cut the text in this position
+                $truncate = substr($truncate, 0, $spacepos);
+            }
+        }
+
+        // add the defined ending to the text
+        $truncate .= $ending;
+		/*
+        if($considerHtml) {
+            // close all unclosed html-tags
+            foreach ($open_tags as $tag) {
+                $truncate .= '</' . $tag . '>';
+            }
+        }
+        */
+        return $truncate;
+
+    }
+
+	/**
+	 * Protège une chaine contre un null byte
+	 *
+	 * @param	string  $text chaine à nettoyer
+	 * @return	string chaine nettoyée
+	*/
+	public static function nullbyteRemove($string) {
+		return str_replace("\0", '', $string);
+	}
+
+	/**
+	 * Controle le nom d'un fichier ou d'un dossier
+	 *
+	 * @param	string  nom d'un fichier
+	 * @return	boolean validité du nom du fichier ou du dossier
+	*/
+	public static function checkSource($src, $type='dir') {
+
+		if (is_null($src) OR !strlen($src) OR substr($src,-1,1)=="." OR false!==strpos($src, "..")) {
+			return false;
+		}
+
+		if($type=='dir')
+			$regex = ",(/\.)|[[:cntrl:]]|(//)|(\\\\)|([\\:\*\?\"\<\>\|]),";
+		elseif($type=='file')
+			$regex = ",[[:cntrl:]]|[/\\:\*\?\"\<\>\|],";
+
+        if (preg_match($regex, $src)) {
+			return false;
+        }
+		return true;
+    }
+
+	/**
+	 * Formate le nom d'une miniature à partir d'un nom de fichier
+	 *
+	 * @param	string  nom d'un fichier
+	 * @return	string	nmo de la miniature au format fichier.tb.ext
+	*/
+	public static function thumbName($filename) {
+		if(preg_match('/^(.*\.)([^.]+)$/D', $filename, $matches)) {
+			return $matches[1].'tb.'.$matches[2];
+		} else {
+			return $filename;
+		}
+	}
+
+/*
+	function arrayRemoveDuplicate($array, $field) {
+		foreach ($array as $element)
+			$cmp[] = $element[$field];
+		$unique = array_unique($cmp);
+		foreach ($unique as $k => $v)
+			$new[] = $array[$k];
+		return $new;
+	}
+*/
 }
 ?>

@@ -37,14 +37,14 @@ class plxMsg {
 	 *
 	 * @param	null
 	 * @return	stdout
-	 * @author	Stephane F	 
+	 * @author	Stephane F
 	 **/
 	public static function Display() {
 
 		if(isset($_SESSION['error']) AND !empty($_SESSION['error']))
-			echo '<p class="error">'.$_SESSION['error'].'</p>';
+			echo '<p id="msg" class="notification error">'.$_SESSION['error'].'</p>';
 		elseif(isset($_SESSION['info']) AND !empty($_SESSION['info']))
-			echo '<p class="msg">'.$_SESSION['info'].'</p>';
+			echo '<p id="msg" class="notification success">'.$_SESSION['info'].'</p>';
 		unset($_SESSION['error']);
 		unset($_SESSION['info']);
 	}

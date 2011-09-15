@@ -1,7 +1,7 @@
 <?php if(!defined('PLX_ROOT')) exit; ?>
 <div id="footer">
 	<p>
-		G&eacute;n&eacute;r&eacute; par <a href="http://pluxml.org" title="Blog ou Cms sans base de donn&eacute;es">PluXml</a> 
+		G&eacute;n&eacute;r&eacute; par <a href="http://pluxml.org" title="Blog ou Cms sans base de donn&eacute;es">PluXml</a>
 		en <?php $plxShow->chrono(); ?><br />
 		<a href="#top">Haut de page</a>
 	</p>

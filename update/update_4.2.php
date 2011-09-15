@@ -9,7 +9,7 @@ class update_4_2 extends plxUpdate{
 
 	function step1() {
 
-		echo "Mise &agrave; jour du fichier parametres.xml<br />";
+		echo L_UPDATE_UPDATE_PARAMETERS_FILE."<br />";
 
 		$new_parameters = array(
 			'clef' => null,

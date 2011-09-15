@@ -5,7 +5,7 @@ function dateNow() {
 	var m = now.getMonth();
 	var d = now.getDate();
 	var h = now.getHours();
-	var i = now.getMinutes();	
+	var i = now.getMinutes();
 	if(i <= 9){i = '0'+i;}
 	if(h <= 9){h = '0'+h;}
 	if(d <= 9){d = '0'+d;}
@@ -16,36 +16,9 @@ function dateNow() {
 	document.getElementsByName('month')['0'].value = m;
 	document.getElementsByName('year')['0'].value = y;
 }
-function openPopup(fichier,nom,width,height) {
-	var popup = window.open(unescape(fichier) , nom, "directories=no, toolbar=no, menubar=no, location=no, resizable=yes, scrollbars=yes, width="+width+" , height="+height);
-	if(popup) {
-		popup.focus();
-	} else {
-		alert('Ouverture de la fenêtre bloquée par un anti-popup!');
-	}
-	return;
-}
 function answerCom(where,id,author) {
 	addText(where, '<a href="#c'+id+'">@'+author+'</a> :\n');
 	scrollTo(0,0);
-}
-function checkAll(inputs, field) {
-	for(var i = 0; i < inputs.elements.length; i++) {
-		if(inputs[i].type == "checkbox" && inputs[i].name==field) {
-			inputs[i].checked = !inputs[i].checked ;
-		}
-	}
-}
-function toggleTR(link, id) {
-	var text = document.getElementById(link);
-	var tr = document.getElementById(id).style.display;
-	if (tr == 'table-row') {
-		document.getElementById(id).style.display = 'none';
-		text.innerHTML = 'Options';
-	} else {
-		document.getElementById(id).style.display = 'table-row';
-		text.innerHTML = 'Masquer';
-	}
 }
 function addText(where, open, close) {
 	close = close==undefined ? '' : close;
@@ -74,16 +47,29 @@ function addText(where, open, close) {
 	}
 	return;
 }
-function insImg(where, src) {
-	if(src.substr(-3)=='.tb')
-		addText(where, '<a href="'+src.substr(0,src.length-3)+'"><img src="'+src+'" alt="" /></a>');
-	else
-		addText(where, '<img src="'+src+'" alt="" />');
+function checkAll(inputs, field) {
+	alert(inputs.elements.length);
+	for(var i = 0; i < inputs.elements.length; i++) {
+		if(inputs[i].type == "checkbox" && inputs[i].name==field) {
+			inputs[i].checked = !inputs[i].checked ;
+		}
+	}
 }
-function insDoc(where, src, title, download) {
-	if(download=='1')
-		addText(where, '<a href="./?telechargement/'+src+'">'+title+'</a>');
+function toggleDiv(divId,togglerId,on,off){
+	var toggler = document.getElementById(togglerId);
+	if(document.getElementById(divId).style.display == 'none') {
+		document.getElementById(divId).style.display = 'block';
+		toggler.innerHTML=off;
+	} else {
+		document.getElementById(divId).style.display = 'none';
+		toggler.innerHTML=on;
+	}
+}
+function insTag(where, tag) {
+	var formfield = document.getElementsByName(where)['0'];
+	if(formfield.value=='')
+		formfield.value=tag;
 	else
-		addText(where, src);	
+		formfield.value = formfield.value+', '+tag;
 }
 -->

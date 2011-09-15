@@ -16,32 +16,37 @@ $plxAdmin->checkProfil(PROFIL_ADMIN);
 include(dirname(__FILE__).'/top.php');
 ?>
 
-<h2>Informations relatives &agrave; PluXml</h2>
+<h2><?php echo L_CONFIG_INFOS_TITLE ?></h2>
 
-<p>Ces informations vous renseignent sur le fonctionnement de votre PluXml et peuvent s'av&eacute;rer utiles pour son d&eacute;pannage.</p>
-
-<ul>
-	<li><strong>Version : <?php echo $plxAdmin->version; ?> (encodage <?php echo PLX_CHARSET; ?>)</strong></li>
-	<li><?php plxUtils::testWrite(PLX_CONF); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['categories']); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['statiques']); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['users']); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['racine_articles']); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['racine_commentaires']); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['racine_statiques']); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['images']); ?></li>
-	<li><?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['documents']); ?></li>
-	<li><?php echo function_exists('imagecreatetruecolor')?'Biblioth&egrave;que GD install&eacute;e':'<span class="alert">Bibliothèque GD non install&eacute;e</span>' ?></li>			
-	<li>Nombre de cat&eacute;gories : <?php echo count($plxAdmin->aCats); ?></li>
-	<li>Nombre de pages statiques : <?php echo count($plxAdmin->aStats); ?></li>
-	<li>Nom du r&eacute;dacteur en session : <?php echo $plxAdmin->aUsers[$_SESSION['user']]['name'] ?></li>
-</ul>
-
-<ul>
-	<li>Version de php : <?php echo phpversion(); ?></li>
-	<li>Etat des "magic quotes" : <?php echo get_magic_quotes_gpc(); ?></li>
-</ul>
-
+<p><?php echo L_CONFIG_INFOS_DESCRIPTION ?></p>
+<div class="panel">
+	<ul>
+		<li><strong><?php echo L_PLUXML_VERSION; ?> <?php echo $plxAdmin->version; ?> (<?php echo L_INFO_CHARSET ?> <?php echo PLX_CHARSET ?>)</strong></li>
+		<li><?php echo L_INFO_PHP_VERSION; ?> : <?php echo phpversion(); ?></li>
+		<li><?php echo L_INFO_MAGIC_QUOTES; ?> : <?php echo get_magic_quotes_gpc(); ?></li>
+		<?php plxUtils::testWrite(PLX_CONF); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['categories']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['statiques']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['users']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['tags']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['racine_articles']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['racine_commentaires']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['racine_statiques']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['images']); ?>
+		<?php plxUtils::testWrite(PLX_ROOT.$plxAdmin->aConf['documents']); ?>
+		<?php plxUtils::testModReWrite() ?>
+		<?php plxUtils::testLibGD() ?>
+		<?php plxUtils::testMail() ?>
+		<li><?php echo L_CONFIG_INFOS_NB_CATS ?> <?php echo sizeof($plxAdmin->aCats); ?></li>
+		<li><?php echo L_CONFIG_INFOS_NB_STATICS ?> <?php echo sizeof($plxAdmin->aStats); ?></li>
+		<li><?php echo L_CONFIG_INFOS_WRITER ?> <?php echo $plxAdmin->aUsers[$_SESSION['user']]['name'] ?></li>
+	</ul>
+</div>
+<div class="panel">
+	<strong><?php echo L_PLUXML_CHECK_VERSION ?></strong>
+	<p><?php echo $plxAdmin->checkMaj(); ?></p>
+</div>
+<?php eval($plxAdmin->plxPlugins->callHook('AdminSettingsInfos')) ?>
 <?php
 # On inclut le footer
 include(dirname(__FILE__).'/foot.php');

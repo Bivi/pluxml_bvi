@@ -3,7 +3,7 @@
 	<div id="content">
 		<?php while($plxShow->plxMotor->plxRecord_arts->loop()): # On boucle sur les articles ?>
 			<div class="post">
-				<h2 class="title"><?php $plxShow->artTitle('link'); ?></h2>				
+				<h2 class="title"><?php $plxShow->artTitle('link'); ?></h2>
 				<p class="post-content">
 					<p><?php $plxShow->artChapo("Lire : #art_title", true, 150); ?></p>
 				</p>
@@ -14,8 +14,8 @@
 				<div class="clearer"></div>
 			</div>
 		<?php endwhile; # Fin de la boucle sur les articles ?>
-		<?php # On affiche le fil Atom de cet article ?>
-		<div class="feeds"><?php $plxShow->artFeed('atom',$plxShow->catId()); ?></div>
+		<?php # On affiche le fil Rss de cet article ?>
+		<div class="feeds"><?php $plxShow->artFeed('rss',$plxShow->catId()); ?></div>
 		<?php # On affiche la pagination ?>
 		<p id="pagination"><?php $plxShow->pagination(); ?></p>
 	</div>

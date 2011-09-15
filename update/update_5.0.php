@@ -9,7 +9,7 @@ class update_5_0 extends plxUpdate{
 
 	/* Création des nouveaux paramètres dans le fichier parametres.xml */
 	public function step1() {
-		echo "Mise &agrave; jour du fichier parametres.xml<br />";
+		echo L_UPDATE_UPDATE_PARAMETERS_FILE."<br />";
 		$new_parameters = array(
 			'urlrewriting' 	=> 0,
 			'gzip'		 	=> 0,
@@ -27,13 +27,13 @@ class update_5_0 extends plxUpdate{
 
 	/* Création du fichier data/configuration/tags.xml */
 	public function step2() {
-		echo "Cr&eacute;ation du fichier tags.xml<br />";
+		echo L_UPDATE_CREATE_TAGS_FILE."<br />";
 		$xml = '<?xml version="1.0" encoding="'.PLX_CHARSET.'"?>';
 		$xml .= '<document>'."\n";
 		$xml .= '</document>';
 		if(!plxUtils::write($xml,PLX_ROOT.$this->plxAdmin->aConf['tags'])) {
-			echo '<p class="error">Erreur pendant la cr&eacute;tion du fichier des tags (data/configuration/tags.xml)</p>';
-			return false;			
+			echo '<p class="error">'.L_UPDATE_ERR_CREATE_TAGS_FILE.'</p>';
+			return false;
 		}
 		return true;
 	}
@@ -43,9 +43,9 @@ class update_5_0 extends plxUpdate{
 		$srcfile = PLX_ROOT.'themes/'.$this->plxAdmin->aConf['style'].'/home.php';
 		$dstfile = PLX_ROOT.'themes/'.$this->plxAdmin->aConf['style'].'/tags.php';
 		if(!is_file($dstfile)) {
-			echo "Cr&eacute;ation du fichier th&egrave;me: themes/".$this->plxAdmin->aConf['style']."/tags.php<br />";
+			echo L_UPDATE_CREATE_THEME_FILE.": themes/".$this->plxAdmin->aConf['style']."/tags.php<br />";
 			if(!@copy($srcfile, $dstfile)) {
-				echo '<p class="error">Erreur pendant la cr&eacute;tion du fichier themes/style/tags.php</p>';
+				echo '<p class="error">'.L_UPDATE_ERR_CREATE_THEME_FILE.' themes/style/tags.php</p>';
 				return false;
 			}
 		}
@@ -57,9 +57,9 @@ class update_5_0 extends plxUpdate{
 		$srcfile = PLX_ROOT.'themes/'.$this->plxAdmin->aConf['style'].'/home.php';
 		$dstfile = PLX_ROOT.'themes/'.$this->plxAdmin->aConf['style'].'/archives.php';
 		if(!is_file($dstfile)) {
-			echo "Cr&eacute;ation du fichier th&egrave;me: themes/".$this->plxAdmin->aConf['style']."/archives.php<br />";
+			echo L_UPDATE_CREATE_THEME_FILE.": themes/".$this->plxAdmin->aConf['style']."/archives.php<br />";
 			if(!@copy($srcfile, $dstfile)) {
-				echo '<p class="error">Erreur pendant la cr&eacute;tion du fichier themes/style/archives.php</p>';
+				echo '<p class="error">'.L_UPDATE_ERR_CREATE_THEME_FILE.' themes/style/archives.php</p>';
 				return false;
 			}
 		}
@@ -68,23 +68,23 @@ class update_5_0 extends plxUpdate{
 
 	/* Migration des articles: formatage xml + renommage des fichiers */
 	public function step5() {
-		echo "Conversion des articles au nouveau format<br />";
+		echo L_UPDATE_ARTICLES_CONVERSION."<br />";
 		$plxGlob_arts = plxGlob::getInstance(PLX_ROOT.$this->plxAdmin->aConf['racine_articles']);
         if($files = $plxGlob_arts->query('/^[0-9]{4}.([0-9]{3}|home|draft).[0-9]{12}.[a-z0-9-]+.xml$/','art')) {
 			foreach($files as $id => $filename){
 				$art = $this->parseArticle(PLX_ROOT.$this->plxAdmin->aConf['racine_articles'].$filename);
 				if(!$this->plxAdmin->editArticle($art, $art['numero'])) {
-					echo '<p class="error">Erreur pendant le traitement du fichier : '.$filename.'</p>';
+					echo '<p class="error">'.L_UPDATE_ERR_FILE_PROCESSING.' : '.$filename.'</p>';
 					return false;
 				}
 			}
 		}
 		return true;
 	}
-	
+
 	/* Migration du fichier des pages statiques */
 	public function step6() {
-		echo "Migration du fichier des pages statiques<br />";
+		echo L_UPDATE_STATICS_MIGRATION."<br />";
 		if($statics = $this->getStatiques(PLX_ROOT.$this->plxAdmin->aConf['statiques'])) {
 			# On génére le fichier XML
 			$xml = "<?xml version=\"1.0\" encoding=\"".PLX_CHARSET."\"?>\n";
@@ -94,16 +94,16 @@ class update_5_0 extends plxUpdate{
 			}
 			$xml .= "</document>";
 			if(!plxUtils::write($xml,PLX_ROOT.$this->plxAdmin->aConf['statiques'])) {
-				echo '<p class="error">Erreur pendant la migration du fichier des pages statiques (data/configuration/statiques.xml)</p>';
-				return false;			
+				echo '<p class="error">'.L_UPDATE_ERR_STATICS_MIGRATION.' (data/configuration/statiques.xml)</p>';
+				return false;
 			}
 		}
 		return true;
-	}	
+	}
 
 	/* Création du fichier des utilisateurs */
 	public function step7() {
-		echo "Cr&eacute;ation du fichier des utilisateurs<br />";
+		echo L_UPDATE_CREATE_USERS_FILE."<br />";
 		if($users = $this->getUsers(PLX_ROOT.$this->plxAdmin->aConf['passwords'])) {
 			$xml = '<?xml version="1.0" encoding="'.PLX_CHARSET.'"?>'."\n";
 			$xml .= '<document>'."\n";
@@ -118,39 +118,39 @@ class update_5_0 extends plxUpdate{
 			}
 			$xml .= '</document>';
 			if(!plxUtils::write($xml,PLX_ROOT.$this->plxAdmin->aConf['users'])) {
-				echo '<p class="error">Erreur pendant la cr&eacute;tion du fichier des utilisateurs (data/configuration/users.xml)</p>';
-				return false;			
+				echo '<p class="error">'.L_UPDATE_ERR_CREATE_USERS_FILE.' (data/configuration/users.xml)</p>';
+				return false;
 			}
 		}
 		else {
-			echo '<p class="error">Aucun utilisateur pr&eacute;sent dans le fichier data/configuration/passwords.xml</p>';
+			echo '<p class="error">'.L_UPDATE_ERR_NO_USERS.' data/configuration/passwords.xml</p>';
 			return false;
 		}
 		return true;
 	}
-	
+
 	/* Suppression des données obsolètes */
 	public function step8() {
 		# suppression du fichier data/configuration/passwords.xml
 		@unlink(PLX_ROOT.$this->plxAdmin->aConf['passwords']);
 		# suppression du fichier d'installation
-		@unlink(PLX_ROOT.'install.php');		
+		@unlink(PLX_ROOT.'install.php');
 		# suppression des clés obsolètes dans le fichier data/configuration/parametres.xml
 		unset($this->plxAdmin->aConf['password']);
 		$this->plxAdmin->editConfiguration($this->plxAdmin->aConf, $this->plxAdmin->aConf);
 		return true;
 	}
-	
+
 	# Création du fichier .htaccess
 	public function step9() {
 		if(!is_file(PLX_ROOT.'.htaccess')) {
-			echo "Cr&eacute;ation du fichier .htaccess<br />";	
+			echo L_UPDATE_CREATE_HTACCESS_FILE."<br />";
 			$txt = '<Files "version">
     Order allow,deny
     Deny from all
 </Files>';
 			if(!plxUtils::write($txt,PLX_ROOT.'.htaccess')) {
-				echo '<p class="error">Erreur pendant la cr&eacute;tion du fichier .htaccess</p>';
+				echo '<p class="error">'.L_UPDATE_ERR_CREATE_HTACCESS_FILE.'</p>';
 				return false;
 			}
 		}
@@ -174,13 +174,13 @@ class update_5_0 extends plxUpdate{
 		xml_parser_set_option($parser,XML_OPTION_CASE_FOLDING,0);
 		xml_parser_set_option($parser,XML_OPTION_SKIP_WHITE,0);
 		xml_parse_into_struct($parser,$data,$values,$iTags);
-		xml_parser_free($parser);		
+		xml_parser_free($parser);
 		# Recuperation des valeurs de nos champs XML
 		$art['title'] = trim($values[ $iTags['title'][0] ]['value']);
 		$art['author'] = '001';
 		$art['allow_com'] = trim($values[ $iTags['allow_com'][0] ]['value']);
 		$art['chapo'] = (isset($values[ $iTags['chapo'][0] ]['value']))?trim($values[ $iTags['chapo'][0] ]['value']):'';
-		$art['content'] = (isset($values[ $iTags['content'][0] ]['value']))?trim($values[ $iTags['content'][0] ]['value']):'';		
+		$art['content'] = (isset($values[ $iTags['content'][0] ]['value']))?trim($values[ $iTags['content'][0] ]['value']):'';
 		# Informations obtenues en analysant le nom du fichier
 		$art['filename'] = $filename;
 		$tmp = $this->artInfoFromFilename($filename);
@@ -224,7 +224,7 @@ class update_5_0 extends plxUpdate{
 		# On retourne le tableau
 		return $users;
 	}
-	
+
 	private function getStatiques($filename) {
 		$aStats = array();
 		if(is_file($filename)) {

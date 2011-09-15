@@ -1,9 +1,16 @@
-<?php include(dirname(__FILE__).'/header.php'); # On insere le header ?>
-<div id="page">
-	<div id="content">
-		<h2 class="title static"><?php $plxShow->staticTitle(); ?></h2>
-		<div class="post"><?php $plxShow->staticContent(); ?></div>
+<?php include(dirname(__FILE__).'/header.php'); ?>
+
+	<div id="section">
+
+		<div id="article">
+
+				<h2><?php $plxShow->staticTitle(); ?></h2>
+				<div class="static-content"><?php $plxShow->staticContent(); ?></div>
+
+		</div>
+
+		<?php include(dirname(__FILE__).'/sidebar.php'); ?>
+
 	</div>
-	<?php include(dirname(__FILE__).'/sidebar.php'); # On insere la sidebar ?>
-</div>
-<?php include(dirname(__FILE__).'/footer.php'); # On insere le footer ?>
+
+<?php include(dirname(__FILE__).'/footer.php'); ?>

@@ -9,8 +9,14 @@
 
 include(dirname(__FILE__).'/prepend.php');
 
+# Control du token du formulaire
+plxToken::validateFormToken($_POST);
+
+# Hook Plugins
+eval($plxAdmin->plxPlugins->callHook('AdminCategoriesPrepend'));
+
 # Control de l'accès à la page en fonction du profil de l'utilisateur connecté
-$plxAdmin->checkProfil(PROFIL_ADMIN, PROFIL_MODERATOR);
+$plxAdmin->checkProfil(PROFIL_ADMIN, PROFIL_MANAGER, PROFIL_MODERATOR, PROFIL_EDITOR);
 
 # On édite les catégories
 if(!empty($_POST)) {
@@ -19,38 +25,33 @@ if(!empty($_POST)) {
 	exit;
 }
 
-# On récupère les templates des categories
-$files = plxGlob::getInstance(PLX_ROOT.'themes/'.$plxAdmin->aConf['style']);
-if ($array = $files->query('/categorie(-[a-z0-9-_]+)?.php$/')) {
-	foreach($array as $k=>$v)
-		$aTemplates[$v] = $v;
-}
-
 # Tableau du tri
-$aTri = array('desc'=>'d&eacute;croissant', 'asc'=>'croissant');
+$aTri = array('desc'=>L_SORT_DESCENDING_DATE, 'asc'=>L_SORT_ASCENDING_DATE, 'alpha'=>L_SORT_ALPHABETICAL);
 
 # On inclut le header
 include(dirname(__FILE__).'/top.php');
 ?>
 
-<h2>Cr&eacute;ation et &eacute;dition de cat&eacute;gories</h2>
+<h2><?php echo L_CAT_TITLE ?></h2>
 
-<form action="categories.php" method="post" id="change-cat-file">
+<?php eval($plxAdmin->plxPlugins->callHook('AdminCategoriesTop')) # Hook Plugins ?>
+
+<form action="categories.php" method="post" id="form_categories">
 	<table class="table">
 	<thead>
 		<tr>
-			<th style="width:5px"><input type="checkbox" onclick="checkAll(this.form, 'idCategory[]')" /></th>	
-			<th class="tc4">Identifiant</th>
-			<th class="tc4">Nom de la cat&eacute;gorie</th>
-			<th class="tc4">Url</th>
-			<th class="tc4">Tri des articles</th>
-			<th class="tc4">Nb art/page</th>
-			<th class="tc4">Ordre</th>				
-			<th class="tc4">Menu</th>
-			<th class="tc5">&nbsp;</th>
+			<th class="checkbox"><input type="checkbox" onclick="checkAll(this.form, 'idCategory[]')" /></th>
+			<th class="title"><?php echo L_CAT_LIST_ID ?></th>
+			<th><?php echo L_CAT_LIST_NAME ?></th>
+			<th><?php echo L_CAT_LIST_URL ?></th>
+			<th><?php echo L_CAT_LIST_SORT ?></th>
+			<th><?php echo L_CAT_LIST_BYPAGE ?></th>
+			<th><?php echo L_CAT_LIST_ORDER ?></th>
+			<th><?php echo L_CAT_LIST_MENU ?></th>
+			<th>&nbsp;</th>
 		</tr>
 	</thead>
-	<tbody>	
+	<tbody>
 	<?php
 	# Initialisation de l'ordre
 	$num = 0;
@@ -59,8 +60,8 @@ include(dirname(__FILE__).'/top.php');
 		foreach($plxAdmin->aCats as $k=>$v) { # Pour chaque catégorie
 			$ordre = ++$num;
 			echo '<tr class="line-'.($num%2).'">';
-			echo '<td class="tc7"><input type="checkbox" name="idCategory[]" value="'.$k.'" /><input type="hidden" name="catNum[]" value="'.$k.'" /></td>';
-			echo '<td class="tc6">Cat&eacute;gorie '.$k.'</td><td>';	
+			echo '<td><input type="checkbox" name="idCategory[]" value="'.$k.'" /><input type="hidden" name="catNum[]" value="'.$k.'" /></td>';
+			echo '<td>'.L_CATEGORY.' '.$k.'</td><td>';
 			plxUtils::printInput($k.'_name', plxUtils::strCheck($v['name']), 'text', '15-50');
 			echo '</td><td>';
 			plxUtils::printInput($k.'_url', $v['url'], 'text', '15-50');
@@ -71,13 +72,10 @@ include(dirname(__FILE__).'/top.php');
 			echo '</td><td>';
 			plxUtils::printInput($k.'_ordre', $ordre, 'text', '3-3');
 			echo '</td><td>';
-			plxUtils::printSelect($k.'_menu', array('oui'=>'Afficher','non'=>'Masquer'), $v['menu']);
-			echo '</td><td class="tc6">';
-			echo '<a id="link_'.$k.'" href="#" onclick="toggleTR(\'link_'.$k.'\', \'tr_'.$k.'\')">Options</a>';
-			echo '</td></tr>';
-			echo '<tr class="options" id="tr_'.$k.'"><td colspan="3" class="options-head">Template&nbsp;:</td><td colspan="6">&nbsp;&nbsp;themes/'.$plxAdmin->aConf['style'].'/';
-			plxUtils::printSelect($k.'_template', $aTemplates, $v['template']);
-			echo '</td></tr>';
+			plxUtils::printSelect($k.'_menu', array('oui'=>L_DISPLAY,'non'=>L_HIDE), $v['menu']);
+			echo '</td>';
+			echo '<td><a href="categorie.php?p='.$k.'">'.L_OPTIONS.'</a></td>';
+			echo '</tr>';
 		}
 		# On récupère le dernier identifiant
 		$a = array_keys($plxAdmin->aCats);
@@ -87,9 +85,9 @@ include(dirname(__FILE__).'/top.php');
 	}
 	$new_catid = str_pad($a['0']+1, 3, "0", STR_PAD_LEFT);
 	?>
-		<tr style="background-color:#e0e0e0">
+		<tr class="new">
 			<td>&nbsp;</td>
-			<td class="tc6">Nouvelle cat&eacute;gorie</td>
+			<td><?php echo L_NEW_CATEGORY ?></td>
 			<td>
 			<?php
 				echo '<input type="hidden" name="catNum[]" value="'.$new_catid.'" />';
@@ -104,27 +102,26 @@ include(dirname(__FILE__).'/top.php');
 				echo '</td><td>';
 				plxUtils::printInput($new_catid.'_ordre', ++$num, 'text', '3-3');
 				echo '</td><td>';
-				plxUtils::printSelect($new_catid.'_menu', array('oui'=>'Afficher','non'=>'Masquer'), '1');
+				plxUtils::printSelect($new_catid.'_menu', array('oui'=>L_DISPLAY,'non'=>L_HIDE), '1');
 				echo '</td><td>&nbsp;';
 			?>
 			</td>
 		</tr>
-		<tr>
-			<td colspan="9">
-				<?php plxUtils::printSelect('selection', array( '' => 'Pour la s&eacute;lection...', 'delete' => 'Supprimer'), '') ?>
-				<input class="button" type="submit" name="submit" value="Ok" />
-			</td>
-		</tr>
-		<tr>
-			<td colspan="9" style="text-align:center">
-				<input class="button" type="submit" name="update" value="Modifier la liste des cat&eacute;gories" />
-			</td>
-		</tr>
 	</tbody>
 	</table>
+	<p class="center">
+		<?php echo plxToken::getTokenPostMethod() ?>
+		<input class="button update " type="submit" name="update" value="<?php echo L_CAT_APPLY_BUTTON ?>" />
+	</p>
+	<p>
+		<?php plxUtils::printSelect('selection', array( '' => L_FOR_SELECTION, 'delete' => L_DELETE), '') ?>
+		<input class="button submit" type="submit" name="submit" value="<?php echo L_OK ?>" />
+	</p>
 </form>
 
 <?php
+# Hook Plugins
+eval($plxAdmin->plxPlugins->callHook('AdminCategoriesFoot'));
 # On inclut le footer
 include(dirname(__FILE__).'/foot.php');
 ?>

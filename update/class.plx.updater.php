@@ -6,7 +6,7 @@
  * @package PLX
  * @author	Stephane F
  **/
- 
+
 define('PLX_UPDATE', PLX_ROOT.'update/');
 
 class plxUpdater {
@@ -15,7 +15,7 @@ class plxUpdater {
 	public $oldVersion = '' ;
 	public $updateList = array(); # liste des mises à jour disponibles
 
-	private $plxAdmin; # objet plxAdmin
+	public $plxAdmin; # objet plxAdmin
 
 	/**
 	 * Constructeur de la classe plxUpdater
@@ -72,7 +72,7 @@ class plxUpdater {
 
 		$new_params['version'] = $this->newVersion;
 		$this->plxAdmin->editConfiguration($this->plxAdmin->aConf, $new_params);
-		echo "Mise &agrave; jour de la version ".$this->newVersion.' termin&eacute;e.<br />';
+		printf(L_UPDATE_ENDED.'<br />', $this->newVersion);
 	}
 
 	/**
@@ -93,7 +93,8 @@ class plxUpdater {
 				);
 			}
 		}
-		krsort($this->updateList);
+		ksort($this->updateList);
+
 	}
 
 	/**
@@ -106,8 +107,10 @@ class plxUpdater {
 
 		$errors = false;
 		foreach($this->updateList as $num_version => $update) {
-			if(floatval($num_version) > floatval($this->oldVersion) AND floatval($num_version) > floatval($version)) {
-				echo '<p><strong>Applications des mises &agrave jour version '.floatval($num_version).'</strong></p>';
+
+			if(($this->oldVersion!='' AND version_compare($num_version,$this->oldVersion,'>')>0) OR ($version!='' AND version_compare($num_version,$version,'>')>0)) {
+
+				echo '<p><strong>'.L_UPDATE_INPROGRESS.' '.$num_version.'</strong></p>';
 				# inclusion du fichier de mise à jour
 				include(PLX_UPDATE.$update['filename']);
 				# création d'un instance de l'objet de mise à jour
@@ -133,9 +136,9 @@ class plxUpdater {
 		}
 
 		if($errors)
-			echo '<p class="error">Une erreur s\'est produite pendant la mise &agrave; jour.</p>';
+			echo '<p class="error">'.L_UPDATE_ERROR.'</p>';
 		else
-			echo '<p class="msg">Toutes les mises &agrave; jour ont &eacute;t&eacute; appliqu&eacute;es avec succ&egrave;s !</p>';
+			echo '<p class="msg">'.L_UPDATE_SUCCESSFUL.'</p>';
 
 		return !$errors;
 	}
@@ -143,7 +146,7 @@ class plxUpdater {
 }
 
 /**
- * Classe plxUpdate responsable d'executer des actions de mises à jour 
+ * Classe plxUpdate responsable d'executer des actions de mises à jour
  *
  * @package PLX
  * @author	Stephane F
@@ -163,7 +166,7 @@ class plxUpdate {
 	}
 
 	/**
-	 * Méthode qui met à jour le fichier parametre.xml en important les nouveaux paramètres 
+	 * Méthode qui met à jour le fichier parametre.xml en important les nouveaux paramètres
 	 *
 	 * @param	new_params		tableau contenant la liste des nouveaux paramètres avec leur valeur par défaut.
 	 * @return	null
@@ -183,6 +186,29 @@ class plxUpdate {
 			return $this->plxAdmin->editConfiguration($this->plxAdmin->aConf, $new_params).'<br />';
 		}
 
+	}
+
+	/**
+	 * Méthode récursive qui supprimes tous les dossiers et les fichiers d'un répertoire
+	 *
+	 * @param	deldir	répertoire de suppression
+	 * @return	boolean	résultat de la suppression
+	 * @author	Stephane F
+	 **/
+	public function deleteDir($deldir) { #fonction récursive
+
+		if(is_dir($deldir) AND !is_link($deldir)) {
+			if($dh = @opendir($deldir)) {
+				while(FALSE !== ($file = readdir($dh))) {
+					if($file != '.' AND $file != '..') {
+						$this->deleteDir(($deldir!='' ? $deldir.'/' : '').$file);
+					}
+				}
+				closedir($dh);
+			}
+			return @rmdir($deldir);
+		}
+		return @unlink($deldir);
 	}
 }
 ?>

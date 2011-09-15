@@ -9,6 +9,7 @@
 class plxShow {
 
 	public $plxMotor = false; # Objet plxMotor
+	private $lang; # fichier de traduction du theme
 
 	/**
 	 * Constructeur qui initialise l'objet plxMotor par référence
@@ -20,8 +21,17 @@ class plxShow {
 	public function __construct(&$plxMotor) {
 
 		$this->plxMotor = &$plxMotor;
+
+		# Chargement du fichier de lang du theme
+		$langfile = PLX_ROOT.'themes/'.$this->plxMotor->style.'/lang/'.$this->plxMotor->aConf['default_lang'].'.php';
+		if(is_file($langfile)) {
+			include($langfile);
+			$this->lang = $LANG;
+		}
+		# Hook Plugins
+		eval($this->plxMotor->plxPlugins->callHook('plxShowConstruct'));
 	}
-	
+
 	/**
 	 * Méthode qui affiche les urls réécrites
 	 *
@@ -30,9 +40,9 @@ class plxShow {
 	 * @author	Stéphane F
 	 **/
 	public function urlRewrite($url='') {
-	
+
 		echo $this->plxMotor->urlRewrite($url);
-	}	
+	}
 
 	/**
 	 * Méthode qui affiche le type de compression http
@@ -43,8 +53,9 @@ class plxShow {
 	 **/
 	public function httpEncoding() {
 
-		if($this->plxMotor->aConf['gzip'] AND $encoding = plxUtils::httpEncoding())
-			echo 'Compression '.strtoupper($encoding).' activ&eacute;e';
+		$encoding = plxUtils::httpEncoding();
+		if($this->plxMotor->aConf['gzip'] AND $encoding)
+			printf(L_HTTPENCODING, strtoupper($encoding));
 
 	}
 
@@ -56,7 +67,7 @@ class plxShow {
 	 * @author	Florent MONTHEL
 	 **/
 	public function racine() {
-	
+
 		echo $this->plxMotor->racine;
 	}
 
@@ -68,10 +79,10 @@ class plxShow {
 	 * @author	Stephane F.
 	 **/
 	public function mode() {
-	
+
 		return $this->plxMotor->mode;
-	}	
-	
+	}
+
 	/**
 	 * Méthode qui affiche le charset selon la casse $casse
 	 *
@@ -99,6 +110,21 @@ class plxShow {
 
 		echo $this->plxMotor->version;
 	}
+
+	/**
+	 * Méthode qui affiche ou renvoit la langue par défaut
+	 *
+	 * @param	echo		si à VRAI affichage à l'écran
+	 * @return	stdout/string
+	 * @author	Stéphane F
+	 **/
+	public function defaultLang($echo=true) {
+		if($echo)
+			echo $this->plxMotor->aConf['default_lang'];
+		else
+			return $this->plxMotor->aConf['default_lang'];
+	}
+
 
 	/**
 	 * Méthode qui affiche la variable get de l'objet plxMotor (variable $_GET globale)
@@ -145,6 +171,8 @@ class plxShow {
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stéphane F
 	 **/
 	public function pageTitle() {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowPageTitle'))) return;
 
 		if($this->plxMotor->mode == 'home') {
 			if(!empty($this->plxMotor->aConf['description']))
@@ -166,13 +194,17 @@ class plxShow {
 			return;
 		}
         if($this->plxMotor->mode == 'archives') {
-            echo $this->plxMotor->aConf['title'].' - Archives '.plxDate::getCalendar('month', substr($this->plxMotor->cible, 4, 6)).' '.substr($this->plxMotor->cible, 0, 4);
+			preg_match('/^(\d{4})(\d{2})?(\d{2})?/',$this->plxMotor->cible, $capture);
+			$year = !empty($capture[1]) ? ' '.$capture[1] : '';
+			$month = !empty($capture[2]) ? ' '.plxDate::getCalendar('month', $capture[2]) : '';
+			$day = !empty($capture[3]) ? ' '.plxDate::getCalendar('day', $capture[3]) : '';
+            echo plxUtils::strCheck($this->plxMotor->aConf['title']).' - '.L_PAGETITLE_ARCHIVES.$day.$month.$year;
             return;
         }
         if($this->plxMotor->mode == 'tags') {
-            echo $this->plxMotor->aConf['title'].' - Tag '.$this->plxMotor->cible;
+            echo plxUtils::strCheck($this->plxMotor->aConf['title']).' - '.L_PAGETITLE_TAG.' '.$this->plxMotor->cible;
             return;
-        }		
+        }
 		if($this->plxMotor->mode == 'erreur') {
 			echo plxUtils::strCheck($this->plxMotor->aConf['title']).' - '.$this->plxMotor->plxErreur->getMessage();
 			return;
@@ -180,9 +212,59 @@ class plxShow {
 	}
 
 	/**
+	 * Méthode qui affiche le meta passé en paramètre
+	 *
+	 * @param	meta	nom du meta à afficher (description, keywords,author)
+	 * @return	stdout
+	 * @scope	global
+	 * @author	Stéphane F
+	 **/
+	public function meta($meta='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowMeta'))) return;
+
+		if(!in_array($meta, array('description','keywords','author')))
+			return;
+
+		$meta=strtolower($meta);
+
+		if($this->plxMotor->mode == 'home') {
+			if(!empty($this->plxMotor->aConf['meta_'.$meta]))
+				echo '<meta name="'.$meta.'" content="'.plxUtils::strCheck($this->plxMotor->aConf['meta_'.$meta]).'" />'."\n";
+			return;
+		}
+		if($this->plxMotor->mode == 'article') {
+			if($meta=='author')
+				echo '<meta name="author" content="'.$this->artAuthor(false).'" />'."\n";
+			else {
+				$meta_content=$this->plxMotor->plxRecord_arts->f('meta_'.$meta);
+				if(!empty($meta_content))
+					echo '<meta name="'.$meta.'" content="'.plxUtils::strCheck($meta_content).'" />'."\n";
+				elseif(!empty($this->plxMotor->aConf['meta_'.$meta]))
+					echo '<meta name="'.$meta.'" content="'.plxUtils::strCheck($this->plxMotor->aConf['meta_'.$meta]).'" />'."\n";
+			}
+			return;
+		}
+		if($this->plxMotor->mode == 'static') {
+			if(!empty($this->plxMotor->aStats[ $this->plxMotor->cible ]['meta_'.$meta]))
+				echo '<meta name="'.$meta.'" content="'.plxUtils::strCheck($this->plxMotor->aStats[ $this->plxMotor->cible ]['meta_'.$meta]).'" />'."\n";
+			elseif(!empty($this->plxMotor->aConf['meta_'.$meta]))
+				echo '<meta name="'.$meta.'" content="'.plxUtils::strCheck($this->plxMotor->aConf['meta_'.$meta]).'" />'."\n";
+			return;
+		}
+		if($this->plxMotor->mode == 'categorie') {
+			if(!empty($this->plxMotor->aCats[ $this->plxMotor->cible ]['meta_'.$meta]))
+				echo '<meta name="'.$meta.'" content="'.plxUtils::strCheck($this->plxMotor->aCats[ $this->plxMotor->cible ]['meta_'.$meta]).'" />'."\n";
+			elseif(!empty($this->plxMotor->aConf['meta_'.$meta]))
+				echo '<meta name="'.$meta.'" content="'.plxUtils::strCheck($this->plxMotor->aConf['meta_'.$meta]).'" />'."\n";
+			return;
+		}
+	}
+
+	/**
 	 * Méthode qui affiche le titre du blog linké (variable $type='link') ou non
 	 *
-	 * @param	type	type d'affichage : link => sous forme de lien
+	 * @param	type	type d'affichage: texte ou sous forme de lien
 	 * @return	stdout
 	 * @scope	global
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
@@ -191,7 +273,7 @@ class plxShow {
 
 		$title = plxUtils::strCheck($this->plxMotor->aConf['title']);
 		if($type == 'link') # Type lien
-			echo '<a href="'.$this->plxMotor->urlRewrite().'" title="'.$title.'">'.$title.'</a>';
+			echo '<a class="maintitle" href="'.$this->plxMotor->urlRewrite().'" title="'.$title.'">'.$title.'</a>';
 		else # Type normal
 			echo $title;
 	}
@@ -216,20 +298,16 @@ class plxShow {
 	 * @scope	global
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
-	public function nbAllCat($format='#nb cat&eacute;gorie(s)') {
+	public function nbAllCat($format=L_NBALLCAT) {
 
-		# Initialisation
 		$nb = 0;
-		# On verifie qu'il y a des categories
 		if($this->plxMotor->aCats) {
 			foreach($this->plxMotor->aCats as $k=>$v) {
 				if($v['articles'] > 0) # Si on a des articles
 					$nb++;
-			} # Fin du while
+			}
 		}
-		# On modifie nos motifs
 		$txt = str_replace('#nb',$nb,$format);
-		# On procède à l'affichage
 		echo $txt;
 	}
 
@@ -237,21 +315,14 @@ class plxShow {
 	 * Méthode qui affiche le nombre d'articles du site.
 	 *
 	 * @param	format	format d'affichage du texte du nombre d'articles (#nb)
+	 * @param	select	critere de recherche: all, draft, published, n° categories séparés par un |
 	 * @return	stdout
 	 * @scope	global
-	 * @author	Florent MONTHEL, Stephane F
+	 * @author	Stephane F
 	 **/
-	public function nbAllArt($format="#nb article(s)") {
+	public function nbAllArt($format=L_NBALLART, $select='published') {
 
-		# Initialisation
-		$nb = 0;
-		# Nouvel objet pour compter le nombre d'articles
-		$plxGlob_arts = plxGlob::getInstance(PLX_ROOT.$this->plxMotor->aConf['racine_articles']);
-		$plxGlob_arts->query('/^[0-9]{4}.[0-9,]*.(.+).xml$/');
-		$nb = $plxGlob_arts->count;
-		# On modifie nos motifs
-		$txt = str_replace('#nb',$nb,$format);
-		# On procède à l'affichage
+		$txt = str_replace('#nb',$this->plxMotor->nbArticles($select),$format);
 		echo $txt;
 	}
 
@@ -259,37 +330,35 @@ class plxShow {
 	 * Méthode qui affiche le nombre de commentaires du site.
 	 *
 	 * @param	format	format d'affichage du texte du nombre de commentaires (#nb)
+	 * @param	select	critere de recherche: all, online, offline
 	 * @return	stdout
 	 * @scope	global
-	 * @author	Florent MONTHEL
+	 * @author	Stephane F
 	 **/
-	public function nbAllCom($format='#nb commentaire(s)') {
+	public function nbAllCom($format=L_NBALLCOM) {
 
-		# Initialisation
-		$nb = 0;
-		# Nouvel objet pour compter le nombre de commentaires
-		$plxGlob_coms = plxGlob::getInstance(PLX_ROOT.$this->plxMotor->aConf['racine_commentaires']);
-		$plxGlob_coms->query('/^[0-9]{4}.[0-9]{10}-[0-9]+.xml$/');
-		$nb = $plxGlob_coms->count;
-		# On modifie nos motifs
-		$txt = str_replace('#nb',$nb,$format);
-		# On procède à l'affichage
+		$txt = str_replace('#nb',$this->plxMotor->nbComments('online'),$format);
 		echo $txt;
-		}
+	}
 
 	/**
 	 * Méthode qui affiche la liste des catégories actives.
-	 * Si la variable $extra est renseignée, un lien vers la 
-	 * page d'accueil (nommé $extra) sera mis en place en première 
+	 * Si la variable $extra est renseignée, un lien vers la
+	 * page d'accueil (nommé $extra) sera mis en place en première
 	 * position.
 	 *
 	 * @param	extra	nom du lien vers la page d'accueil
 	 * @param	format	format du texte pour chaque catégorie (variable : #cat_id, #cat_status, #cat_url, #cat_name, #art_nb)
-	 * @return	stdout
+     * @param	include	liste des catégories à afficher séparées par le caractère | (exemple: 001|003)
+     * @param	exclude	liste des catégories à ne pas afficher séparées par le caractère | (exemple: 002|003)
+ 	 * @return	stdout
 	 * @scope	global
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
 	 **/
-	public function catList($extra='', $format='<li id="#cat_id" class="#cat_status"><a href="#cat_url" title="#cat_name">#cat_name</a></li>') {
+	public function catList($extra='', $format='<li id="#cat_id" class="#cat_status"><a href="#cat_url" title="#cat_name">#cat_name</a></li>', $include='', $exclude='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowLastCatList'))) return;
+
 		# Si on a la variable extra, on affiche un lien vers la page d'accueil (avec $extra comme nom)
 		if($extra != '') {
 			$name = str_replace('#cat_id','cat-home',$format);
@@ -302,14 +371,18 @@ class plxShow {
 		# On verifie qu'il y a des categories
 		if($this->plxMotor->aCats) {
 			foreach($this->plxMotor->aCats as $k=>$v) {
-				if($v['articles'] > 0 AND $v['menu'] == 'oui') { # On a des articles
-					# On modifie nos motifs
-					$name = str_replace('#cat_id','cat-'.intval($k),$format);
-					$name = str_replace('#cat_url',$this->plxMotor->urlRewrite('?categorie'.intval($k).'/'.$v['url']),$name);
-					$name = str_replace('#cat_name',plxUtils::strCheck($v['name']),$name);
-					$name = str_replace('#cat_status',($this->catId()==intval($k)?'active':'noactive'), $name);
-					$name = str_replace('#art_nb',$v['articles'],$name);
-					echo $name;
+				$in = (empty($include) OR preg_match('/('.$include.')/', $k));
+				$ex = (!empty($exclude) AND preg_match('/('.$exclude.')/', $k));
+				if($in AND !$ex) {
+					if(($v['articles'] > 0) AND $v['menu'] == 'oui') { # On a des articles
+						# On modifie nos motifs
+						$name = str_replace('#cat_id','cat-'.intval($k),$format);
+						$name = str_replace('#cat_url',$this->plxMotor->urlRewrite('?categorie'.intval($k).'/'.$v['url']),$name);
+						$name = str_replace('#cat_name',plxUtils::strCheck($v['name']),$name);
+						$name = str_replace('#cat_status',($this->catId()==intval($k)?'active':'noactive'), $name);
+						$name = str_replace('#art_nb',$v['articles'],$name);
+						echo $name;
+					}
 				}
 			} # Fin du while
 		}
@@ -319,7 +392,7 @@ class plxShow {
 	 * Méthode qui retourne l'id de la catégorie en question (sans les 0 supplémentaires)
 	 *
 	 * @return	int ou string
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Florent MONTHEL
 	 **/
 	public function catId() {
@@ -336,11 +409,29 @@ class plxShow {
 	}
 
 	/**
+	 * Méthode qui affiche le contenu de la description d'une catégorie
+	 *
+	 * @return	stdout
+	 * @scope	categorie,article
+	 * @author	Stephane F.
+	 **/
+	public function catDescription() {
+
+		# On va verifier que la categorie existe en mode categorie
+		if($this->plxMotor->mode == 'categorie' AND isset($this->plxMotor->aCats[$this->plxMotor->cible]))
+			echo $this->plxMotor->aCats[$this->plxMotor->cible]['description'];
+		# On va verifier que la categorie existe en mode article
+		if($this->plxMotor->mode == 'article' AND isset($this->plxMotor->aCats[$this->plxMotor->plxRecord_arts->f('categorie')]))
+			echo $this->plxMotor->aCats[$this->plxMotor->plxRecord_arts->f('categorie')]['description'];
+
+	}
+
+	/**
 	 * Méthode qui affiche le nom de la catégorie active (linké ou non)
 	 *
 	 * @param	type	type d'affichage : link => sous forme de lien
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
 	public function catName($type='') {
@@ -372,11 +463,11 @@ class plxShow {
 		# Mode home
 		elseif($this->plxMotor->mode == 'home') {
 			if($type == 'link')
-				echo '<a href="'.$this->plxMotor->urlRewrite().'" title="'.plxUtils::strCheck($this->plxMotor->aConf['title']).'">Accueil</a>';
+				echo '<a href="'.$this->plxMotor->urlRewrite().'" title="'.plxUtils::strCheck($this->plxMotor->aConf['title']).'">'.L_HOMEPAGE.'</a>';
 			else
-				echo 'Accueil';
+				echo L_HOMEPAGE;
 		} else {
-			echo 'Non class&eacute;';
+			echo L_UNCLASSIFIED;
 		}
 	}
 
@@ -384,7 +475,7 @@ class plxShow {
 	 * Méthode qui retourne l'identifiant de l'article en question (sans les 0 supplémentaires)
 	 *
 	 * @return	int
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Florent MONTHEL
 	 **/
 	public function artId() {
@@ -395,20 +486,17 @@ class plxShow {
 	/**
 	 * Méthode qui affiche l'url de l'article de type relatif ou absolu
 	 *
-	 * @param	type	type de lien : relatif ou absolu (URL complète)
+	 * @param	type (deprecated)	type de lien : relatif ou absolu
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
-	public function artUrl($type='relatif') {
+	public function artUrl($type='') {
 
-		# Type d'URL
-		#####$path = ($type == 'absolu')?$this->plxMotor->racine:'./';
-		
 		# On affiche l'URL
 		$id = intval($this->plxMotor->plxRecord_arts->f('numero'));
 		$url = $this->plxMotor->plxRecord_arts->f('url');
-		echo $this->plxMotor->urlRewrite('?article'.$id.'/'.$url);	
+		echo $this->plxMotor->urlRewrite('?article'.$id.'/'.$url);
 	}
 
 	/**
@@ -416,7 +504,7 @@ class plxShow {
 	 *
 	 * @param	type	type d'affichage : link => sous forme de lien
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
 	 **/
 	public function artTitle($type='') {
@@ -436,49 +524,66 @@ class plxShow {
 	 * Méthode qui affiche l'auteur de l'article
 	 *
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL et Stephane F
 	 **/
-	public function artAuthorInfos($format='<div class="infos">#art_authorinfos</div>') {
-		$infos = $this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['infos'];
-		if(trim($infos)!='') echo str_replace('#art_authorinfos', $infos, $format);
+	public function artAuthor($echo=true) {
+
+		if(isset($this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['name']))
+			$author = plxUtils::strCheck($this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['name']);
+		else
+			$author = L_ARTAUTHOR_UNKNOWN;
+		if($echo)
+			echo $author;
+		else
+			return $author;
+	}
+
+	/**
+	 * Méthode qui affiche l'adresse email de l'auteur de l'article
+	 *
+	 * @return	stdout
+	 * @scope	home,categorie,article,tags,archives
+	 * @author	Stephane F
+	 **/
+	public function artAuthorEmail() {
+
+		if(isset($this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['email']))
+			echo plxUtils::strCheck($this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['email']);
 	}
 
 	/**
 	 * Méthode qui affiche les informations sur l'auteur de l'article
 	 *
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Stephane F
 	 **/
-	public function artAuthor() {
 
-		if(isset($this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['name']))
-			$author = $this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['name'];
-		else
-			$author = 'inconnu';
-		echo plxUtils::strCheck($author);
-	}	
-	
+	public function artAuthorInfos($format='<div class="infos">#art_authorinfos</div>') {
+
+		$infos = $this->plxMotor->aUsers[$this->plxMotor->plxRecord_arts->f('author')]['infos'];
+		if(trim($infos)!='') echo str_replace('#art_authorinfos', $infos, $format);
+	}
+
 	/**
-	 * Méthode qui affiche la date de publication de l'article selon le format choisi 
+	 * Méthode qui affiche la date de publication de l'article selon le format choisi
 	 *
  	 * @param	format	format du texte de la date (variable: #minute, #hour, #day, #month, #num_day, #num_month, #num_year(4), #num_year(2))
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL et Stephane F.
 	 **/
 	public function artDate($format='#day #num_day #month #num_year(4)') {
 
 		echo plxDate::dateIsoToHum($this->plxMotor->plxRecord_arts->f('date'),$format);
-
 	}
 
 	/**
 	 * Méthode qui affiche l'heure de publication de l'article au format 12:45
 	 *
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN et Florent MONTHEL
 	 **/
 	public function artHour() {
@@ -490,24 +595,25 @@ class plxShow {
 	 * Méthode qui retourne le numéro de la catégorie de l'article (sans les 0 complémentaires)
 	 *
 	 * @return	int
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Stephane F
-	 **/	
+	 **/
 	public function artCatId() {
 
-		return intval($this->plxMotor->plxRecord_arts->f('categorie'));	 
+		return intval($this->plxMotor->plxRecord_arts->f('categorie'));
 	}
-	
+
 	/**
 	 * Méthode qui affiche la liste des catégories l'article sous forme de lien
-	 * ou la chaîne de caractère 'Non classé' si la catégorie 
+	 * ou la chaîne de caractère 'Non classé' si la catégorie
 	 * de l'article n'existe pas
 	 *
+	 * @param	separator	caractère de séparation entre les catégories affichées
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
 	 **/
-	public function artCat() {
+	public function artCat($separator=',') {
 
 		# Initialisation de notre variable interne
 		$catIds = explode(',', $this->plxMotor->plxRecord_arts->f('categorie'));
@@ -526,52 +632,56 @@ class plxShow {
 					# On effectue l'affichage
 					echo '<a class="'.$active.'" href="'.$this->plxMotor->urlRewrite('?categorie'.intval($catId).'/'.$url).'" title="'.$name.'">'.$name.'</a>';
 				} else { # La categorie n'existe pas
-					echo 'Non class&eacute;';
+					echo L_UNCLASSIFIED;
 				}
 			} else { # Categorie "home"
-				echo '<a class="active" href="'.$this->plxMotor->urlRewrite().'" title="Accueil">Accueil</a>';
+				echo '<a class="active" href="'.$this->plxMotor->urlRewrite().'" title="'.L_HOMEPAGE.'">'.L_HOMEPAGE.'</a>';
 			}
-			if ($idx!=sizeof($catIds)-1) echo ', ';
+			if ($idx!=sizeof($catIds)-1) echo $separator.' ';
 		}
 	}
-	
+
 	/**
 	 * Méthode qui affiche la liste des tags l'article sous forme de lien
 	 *
 	 * @param	format	format du texte pour chaque tag (variable : #tag_status, #tag_url, #tag_name)
+ 	 * @param	separator	caractère de séparation entre les tags affichées
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Stephane F
 	 **/
-	public function artTags($format='<a class="#tag_status" href="#tag_url" title="#tag_name">#tag_name</a>') {
-	
+	public function artTags($format='<a class="#tag_status" href="#tag_url" title="#tag_name">#tag_name</a>', $separator=',') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowArtTags'))) return;
+
 		# Initialisation de notre variable interne
 		$taglist = $this->plxMotor->plxRecord_arts->f('tags');
 		if(!empty($taglist)) {
 			$tags = array_map('trim', explode(',', $taglist));
-			foreach($tags as $tag) {
+			foreach($tags as $idx => $tag) {
 				$t = plxUtils::title2url($tag);
 				$name = str_replace('#tag_url',$this->plxMotor->urlRewrite('?tag/'.$t),$format);
 				$name = str_replace('#tag_name',plxUtils::strCheck($tag),$name);
-				$name = str_replace('#tag_status',(($this->plxMotor->mode=='tags' AND $this->plxMotor->cible==$t)?'active':'noactive'), $name);				
+				$name = str_replace('#tag_status',(($this->plxMotor->mode=='tags' AND $this->plxMotor->cible==$t)?'active':'noactive'), $name);
 				echo $name;
+				if ($idx!=sizeof($tags)-1) echo $separator.' ';
 			}
 		}
-		else echo 'Aucun';
-	}	
+		else echo L_ARTTAGS_NONE;
+	}
 
 	/**
-	 * Méthode qui affiche le châpo de l'article ainsi qu'un lien 
-	 * pour lire la suite de l'article. Si l'article n'a pas de chapô, 
+	 * Méthode qui affiche le châpo de l'article ainsi qu'un lien
+	 * pour lire la suite de l'article. Si l'article n'a pas de chapô,
 	 * le contenu de l'article est affiché (selon paramètres)
 	 *
 	 * @param	format	format d'affichage du lien pour lire la suite de l'article (#art_title)
 	 * @param	content	affichage oui/non du contenu si le chapô est vide
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
 	 **/
-	public function artChapo($format="Lire la suite de : #art_title", $content=true) {
+	public function artChapo($format=L_ARTCHAPO, $content=true) {
 
 		# On verifie qu'un chapo existe
 		if($this->plxMotor->plxRecord_arts->f('chapo') != '') {
@@ -583,7 +693,7 @@ class plxShow {
 			echo $this->plxMotor->plxRecord_arts->f('chapo')."\n";
 			if($format) {
 				$title = str_replace("#art_title", $title, $format);
-				echo '<p><a class="more" href="'.$this->plxMotor->urlRewrite('?article'.$id.'/'.$url).'" title="'.$title.'">'.$title.'</a></p>'."\n";
+				echo '<p class="more"><a href="'.$this->plxMotor->urlRewrite('?article'.$id.'/'.$url).'" title="'.$title.'">'.$title.'</a></p>'."\n";
 			}
 		} else { # Pas de chapo, affichage du contenu
 			if($content === true) {
@@ -597,37 +707,35 @@ class plxShow {
 	 *
 	 * @param	chapo	affichage oui/non du chapo
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL et Stephane F
 	 **/
 	public function artContent($chapo=true) {
-	
+
 		if($chapo === true)
 			echo $this->plxMotor->plxRecord_arts->f('chapo')."\n"; # Chapo
 		echo $this->plxMotor->plxRecord_arts->f('content')."\n";
-		
+
 	}
 
 	/**
-	 * Méthode qui affiche un lien vers le fil RSS ou ATOM des articles
+	 * Méthode qui affiche un lien vers le fil Rss des articles
 	 * d'une catégorie précise (si $categorie renseigné) ou du site tout entier
 	 *
-	 * @param	type	type de flux : rss ou atom
+	 * @param	type		type de flux (obsolete)
 	 * @param	categorie	identifiant (sans les 0) d'une catégorie
 	 * @return	stdout
-	 * @scope	global
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
-	public function artFeed($type='atom',$categorie='') {
+	public function artFeed($type='rss', $categorie='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowArtFeed'))) return;
 
-		if($type == 'rss' AND $categorie != '' AND is_numeric($categorie)) # Fil RSS des articles d'une catégorie
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss/categorie'.$categorie).'" title="Fil Rss des articles de cette cat&eacute;gorie">Fil des articles de cette cat&eacute;gorie</a>';
-		elseif($type == 'rss') # Fil RSS des articles
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss').'" title="Fil Rss des articles">Fil des articles</a>';
-		elseif(	$categorie != '' AND is_numeric($categorie)) # Fil ATOM des articles d'une catégorie
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?atom/categorie'.$categorie).'" title="Fil Atom des articles de cette cat&eacute;gorie">Fil des articles de cette cat&eacute;gorie</a>';
-		else # Fil ATOM des articles
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?atom').'" title="Fil Atom des articles">Fil des articles</a>';
+		if($categorie != '' AND is_numeric($categorie)) # Fil Rss des articles d'une catégorie
+			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss/categorie'.$categorie).'" title="'.L_ARTFEED_RSS_CATEGORY.'">'.L_ARTFEED_RSS_CATEGORY.'</a>';
+		else # Fil Rss des articles
+			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss').'" title="'.L_ARTFEED_RSS.'">'.L_ARTFEED_RSS.'</a>';
 	}
 
 	/**
@@ -636,14 +744,17 @@ class plxShow {
 	 *
 	 * @param	format	format d'affichage du texte du nombre de commentaires (#nb)
 	 * @return	stdout
-	 * @scope	home,categorie,article
+	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
 	 **/
-	public function artNbCom($format='#nb commentaire(s)') {
+	public function artNbCom($format=L_ARTNBCOM) {
 
 		# On recupère le nb de commentaire selon le mode
-		if($this->plxMotor->mode == 'article') $nb = $this->plxMotor->plxGlob_coms->count;
-		else $nb = $this->plxMotor->plxRecord_arts->f('nb_com');
+		if($this->plxMotor->mode == 'article' AND $this->plxMotor->plxRecord_coms)
+			$nb = intval($this->plxMotor->plxRecord_coms->size);
+		else
+			$nb = intval($this->plxMotor->plxRecord_arts->f('nb_com'));
+
 		# A t'on besoin d'afficher le nb de commentaires ?
 		if((!$this->plxMotor->aConf['allow_com'] OR !$this->plxMotor->plxRecord_arts->f('allow_com')) AND !$nb)
 			return;
@@ -655,10 +766,9 @@ class plxShow {
 		} else {
 			# On recupere les infos de l'article
 			$num = intval($this->plxMotor->plxRecord_arts->f('numero'));
-			$title = plxUtils::strCheck($this->plxMotor->plxRecord_arts->f('title'));
 			$url = $this->plxMotor->plxRecord_arts->f('url');
 			# On effectue l'affichage
-			echo '<a href="'.$this->plxMotor->urlRewrite('?article'.$num.'/'.$url).'#comments" title="'.$txt.' pour '.$title.'">'.$txt.'</a>';
+			echo '<a href="'.$this->plxMotor->urlRewrite('?article'.$num.'/'.$url).'#comments" title="'.$txt.'">'.$txt.'</a>';
 		}
 	}
 
@@ -667,38 +777,31 @@ class plxShow {
 	 * Si la variable $cat_id est renseignée, seulement les articles de cette catégorie seront retournés.
 	 * On tient compte si la catégorie est active
 	 *
-	 * @param	format	format du texte pour chaque article (variable: #art_id, #art_url, #art_status, #art_author, #art_title, #art_content, #art_content(num), #art_date, #art_hour, #cat_list)
+	 * @param	format	format du texte pour chaque article (variable: #art_id, #art_url, #art_status, #art_author, #art_title, #art_chapo, #art_content, #art_content(num), #art_date, #art_hour, #cat_list)
 	 * @param	max		nombre d'articles maximum
-	 * @param	cat_id	id de la catégorie cible (1,home)
+	 * @param	cat_id	ids des catégories cible
+	 * @param   ending	texte à ajouter en fin de ligne
 	 * @return	stdout
 	 * @scope	global
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
-	public function lastArtList($format='<li><a href="#art_url" title="#art_title">#art_title</a></li>',$max=5,$cat_id='') {
+	public function lastArtList($format='<li><a href="#art_url" title="#art_title">#art_title</a></li>',$max=5,$cat_id='',$ending='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowLastArtList'))) return;
 
 		# Génération de notre motif
-/*
-		if(empty($cat_id))
-			$motif = '/^[0-9]{4}.[0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
-		elseif($cat_id == 'home')
-			$motif = '/^[0-9]{4}.(home[0-9,]*).[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
-		else
-			$motif = '/^[0-9]{4}.[0-9,]*'.str_pad($cat_id,3,'0',STR_PAD_LEFT).'[0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
-*/
 		if(empty($cat_id))
 			$motif = '/^[0-9]{4}.[home|0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
 		else
-			$motif = '/^[0-9]{4}.[home|0-9,]*'.str_pad($cat_id,3,'0',STR_PAD_LEFT).'[0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';			
-			
+			$motif = '/^[0-9]{4}.[home|0-9,]*'.str_pad($cat_id,3,'0',STR_PAD_LEFT).'[0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
+
 		# Nouvel objet plxGlob et récupération des fichiers
-		$plxGlob_arts = plxGlob::getInstance(PLX_ROOT.$this->plxMotor->aConf['racine_articles']);
+		$plxGlob_arts = clone $this->plxMotor->plxGlob_arts;
 		if($aFiles = $plxGlob_arts->query($motif,'art','rsort',0,$max,'before')) {
 			foreach($aFiles as $v) { # On parcourt tous les fichiers
 				$art = $this->plxMotor->parseArticle(PLX_ROOT.$this->plxMotor->aConf['racine_articles'].$v);
 				$num = intval($art['numero']);
 				$date = $art['date'];
-				$content = strip_tags($art['chapo'].$art['content']);
-
 				if(($this->plxMotor->mode == 'article') AND ($art['numero'] == $this->plxMotor->cible))
 					$status = 'active';
 				else
@@ -711,23 +814,22 @@ class plxShow {
 						$catName = plxUtils::strCheck($this->plxMotor->aCats[$catId]['name']);
 						$catUrl = $this->plxMotor->aCats[$catId]['url'];
 						$catList[] = '<a title="'.$catName.'" href="'.$this->plxMotor->urlRewrite('?categorie'.intval($catId).'/'.$catUrl).'">'.$catName.'</a>';
-//					} 
-//					elseif($catId=='home') { 
-//						$catList[] = '<a href="'.$this->urlRewrite().'">Accueil</a>';
 					} else {
-						$catList[] = 'Non class&eacute;';
+						$catList[] = L_UNCLASSIFIED;
 					}
 				}
 				# On modifie nos motifs
 				$row = str_replace('#art_id',$num,$format);
-				$row = str_replace('#cat_list', implode(', ',$catList), $row);				
+				$row = str_replace('#cat_list', implode(', ',$catList), $row);
 				$row = str_replace('#art_url',$this->plxMotor->urlRewrite('?article'.$num.'/'.$art['url']),$row);
 				$row = str_replace('#art_status',$status,$row);
 				$row = str_replace('#art_author',plxUtils::strCheck($this->plxMotor->aUsers[$art['author']]['name']),$row);
 				$row = str_replace('#art_title',plxUtils::strCheck($art['title']),$row);
-				while(preg_match('/#art_content\(([0-9]+)\)/',$row,$capture))
-					$row = str_replace('#art_content('.$capture[1].')',plxUtils::strCut($content,$capture[1]),$row);
-				$row = str_replace('#art_content',$content,$row);
+				$row = str_replace('#art_chapo',$art['chapo'],$row);
+				$strlength = preg_match('/#art_content\(([0-9]+)\)/',$row,$capture) ? $capture[1] : '100';
+				$content = plxUtils::truncate($art['content'],$strlength,$ending,true,true);
+				$row = str_replace('#art_content('.$strlength.')','#art_content', $row);
+				$row = str_replace('#art_content',$content, $row);
 				$row = str_replace('#art_date',plxDate::dateIsoToHum($date,'#num_day/#num_month/#num_year(4)'),$row);
 				$row = str_replace('#art_hour',plxDate::dateIsoToHum($date,'#hour:#minute'),$row);
 				# On genère notre ligne
@@ -760,7 +862,7 @@ class plxShow {
 
 		# Type d'URL
 		#####$path = ($type == 'absolu')?$this->plxMotor->racine:'./';
-		
+
 		# On affiche l'URL
 		$id = $this->plxMotor->plxRecord_coms->f('numero');
 		$artId = $this->plxMotor->plxRecord_coms->f('article');
@@ -768,7 +870,7 @@ class plxShow {
 	}
 
 	/**
-	 * Méthode qui affiche l'auteur du commentaires linké ou non 
+	 * Méthode qui affiche l'auteur du commentaires linké ou non
 	 *
 	 * @param	type	type d'affichage : link => sous forme de lien
 	 * @return	stdout
@@ -801,7 +903,7 @@ class plxShow {
 	/**
 	 * Méthode qui affiche la date de publication d'un commentaire delon le format choisi
 	 *
- 	 * @param	format	format du texte de la date (variable: #minute, #hour, #day, #month, #num_day, #num_month, #num_year(2), #num_year(4))	 
+ 	 * @param	format	format du texte de la date (variable: #minute, #hour, #day, #month, #num_day, #num_month, #num_year(2), #num_year(4))
 	 * @return	stdout
 	 * @scope	article
 	 * @author	Florent MONTHEL et Stephane F
@@ -829,16 +931,15 @@ class plxShow {
 	 *
 	 * @return	stdout
 	 * @scope	article
-	 * @author	Florent MONTHEL
+	 * @author	Stephane F.
 	 **/
 	public function comMessage() {
 
-		//if($this->plxMotor->message_com) echo $this->plxMotor->message_com;
 		if(isset($_SESSION['msgcom']) AND !empty($_SESSION['msgcom'])) {
 			echo $_SESSION['msgcom'];
 			$_SESSION['msgcom']='';
 		}
-			
+
 	}
 
 	/**
@@ -857,29 +958,27 @@ class plxShow {
 			$_SESSION['msg'][$key]='';
 		}
 		else echo $defaut;
-	
+
 	}
 
 	/**
-	 * Méthode qui affiche un lien vers le fil RSS ou ATOM des commentaires
+	 * Méthode qui affiche un lien vers le fil Rss des commentaires
 	 * d'un article précis (si $article renseigné) ou du site tout entier
 	 *
-	 * @param	type	type de flux : rss ou atom
+	 * @param	type		type de flux (obsolete)
 	 * @param	article	identifiant (sans les 0) d'un article
 	 * @return	stdout
 	 * @scope	global
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
 	 **/
-	public function comFeed($type='atom',$article='') {
+	public function comFeed($type='rss', $article='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowComFeed'))) return;
 
-		if($type == 'rss' AND $article != '' AND is_numeric($article)) # Fil RSS des commentaires d'un article
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss/commentaires/article'.$article).'" title="Fil Rss des commentaires de cet article">Fil des commentaires de cet article</a>';
-		elseif($type == 'rss') # Fil RSS des commentaires global
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss/commentaires').'" title="Fil Rss global des commentaires">Fil des commentaires</a>';
-		elseif(	$article != '' AND is_numeric($article)) # Fil ATOM des commentaires d'un article
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?atom/commentaires/article'.$article).'" title="Fil Atom des commentaires de cet article">Fil des commentaires de cet article</a>';
-		else # Fil ATOM des commentaires global
-			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?atom/commentaires').'" title="Fil Atom global des commentaires">Fil des commentaires</a>';
+		if($article != '' AND is_numeric($article)) # Fil Rss des commentaires d'un article
+			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss/commentaires/article'.$article).'" title="'.L_COMFEED_RSS_ARTICLE.'">'.L_COMFEED_RSS_ARTICLE.'</a>';
+		else # Fil Rss des commentaires global
+			echo '<a href="'.$this->plxMotor->urlRewrite('feed.php?rss/commentaires').'" title="'.L_COMFEED_RSS.'">'.L_COMFEED_RSS.'</a>';
 	}
 
 	/**
@@ -894,17 +993,18 @@ class plxShow {
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
 	public function lastComList($format='<li><a href="#com_url">#com_author a dit :</a><br/>#com_content(50)</li>',$max=5,$art_id='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowLastComList'))) return;
 
 		# Génération de notre motif
 		if(empty($art_id))
 			$motif = '/^[0-9]{4}.[0-9]{10}-[0-9]+.xml$/';
 		else
 			$motif = '/^'.str_pad($art_id,4,'0',STR_PAD_LEFT).'.[0-9]{10}-[0-9]+.xml$/';
+
 		# Nouvel objet plxGlob et récupération des fichiers
-		$plxGlob_coms = plxGlob::getInstance(PLX_ROOT.$this->plxMotor->aConf['racine_commentaires']);
-		$aFiles = $plxGlob_coms->query($motif,'com','rsort',0,$max);
-		# On parse les fichiers
-		if(is_array($aFiles)) { # On a des fichiers
+		$plxGlob_coms = clone $this->plxMotor->plxGlob_coms;
+		if($aFiles = $plxGlob_coms->query($motif,'com','rsort',0,$max)) {
 			foreach($aFiles as $v) { # On parcourt tous les fichiers
 				$com = $this->plxMotor->parseCommentaire(PLX_ROOT.$this->plxMotor->aConf['racine_commentaires'].$v);
 
@@ -923,7 +1023,7 @@ class plxShow {
 				}
 				$row = str_replace('#com_content',$content,$row);
 				$row = str_replace('#com_date',plxDate::dateIsoToHum($date,'#num_day/#num_month/#num_year(4)'),$row);
-				$row = str_replace('#com_hour',plxDate::dateIsoToHum($date,'#hour:#minute'),$row);	
+				$row = str_replace('#com_hour',plxDate::dateIsoToHum($date,'#hour:#minute'),$row);
 				# On genère notre ligne
 				echo $row;
 			}
@@ -932,7 +1032,7 @@ class plxShow {
 
 	/**
 	 * Méthode qui affiche la liste des pages statiques.
-	 * Si la variable $extra est renseignée, un lien vers la 
+	 * Si la variable $extra est renseignée, un lien vers la
 	 * page d'accueil (nommé $extra) sera mis en place en première position
 	 *
 	 * @param	extra	nom du lien vers la page d'accueil
@@ -942,7 +1042,12 @@ class plxShow {
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
 	public function staticList($extra='', $format='<li id="#static_id" class="#static_class"><a href="#static_url" class="#static_status" title="#static_name">#static_name</a></li>', $format_group='<li id="#group_id" class="#group_class">#group_name</li>') {
-			
+
+		$menus = array();
+
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowStaticListBegin'))) return;
+
 		$home = (empty($this->plxMotor->get) AND basename($_SERVER['SCRIPT_NAME'])=="index.php");
 		# Si on a la variable extra, on affiche un lien vers la page d'accueil (avec $extra comme nom)
 		if($extra != '') {
@@ -951,7 +1056,7 @@ class plxShow {
 			$stat = str_replace('#static_url',$this->plxMotor->urlRewrite(),$stat);
 			$stat = str_replace('#static_name',plxUtils::strCheck($extra),$stat);
 			$stat = str_replace('#static_status',($home==true?"active":"noactive"), $stat);
-			echo $stat;		
+			$menus[] = $stat;
 		}
 		# On verifie qu'il y a des pages statiques
 		if($this->plxMotor->aStats) {
@@ -963,21 +1068,29 @@ class plxShow {
 						$group = str_replace('#group_id','static-group-'.plxUtils::title2url($v['group']),$format_group);
 						$group = str_replace('#group_class','static-group',$group);
 						$group = str_replace('#group_name',plxUtils::strCheck($v['group']),$group);
-						echo $group;
+						$menus[] =  $group;
 					}
 					$stat = str_replace('#static_id','static-'.intval($k),$format);
 					if(empty($v['group']))
 						$stat = str_replace('#static_class','static-group',$stat);
 					else
 						$stat = str_replace('#static_class','static-menu',$stat);
-					$stat = str_replace('#static_url',$this->plxMotor->urlRewrite('?static'.intval($k).'/'.$v['url']),$stat);
+					if(plxUtils::checkSite($v['url']))
+						$stat = str_replace('#static_url',$v['url'],$stat);
+					else
+						$stat = str_replace('#static_url',$this->plxMotor->urlRewrite('?static'.intval($k).'/'.$v['url']),$stat);
 					$stat = str_replace('#static_name',plxUtils::strCheck($v['name']),$stat);
 					$stat = str_replace('#static_status',(($home===false AND $this->staticId()==intval($k))?'static active':'noactive'), $stat);
-					echo $stat;
+					$menus[] =  $stat;
 					$group_name=$v['group']; # pour gérer la rupture au niveau de l'affichage
 				}
 			} # Fin du while
 		}
+
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowStaticListEnd'))) return;
+
+		echo implode('', $menus);
 	}
 
 	/**
@@ -1003,7 +1116,7 @@ class plxShow {
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
 	public function staticUrl($type='relatif') {
-	
+
 		# Recupération ID URL
 		$staticId = $this->staticId();
 		$staticIdFill = str_pad($staticId,3,'0',STR_PAD_LEFT);
@@ -1022,7 +1135,19 @@ class plxShow {
 
 		echo plxUtils::strCheck($this->plxMotor->aStats[ $this->plxMotor->cible ]['name']);
 	}
-	
+
+	/**
+	 * Méthode qui affiche le groupe de la page statique
+	 *
+	 * @return	stdout
+	 * @scope	static
+	 * @author	Stéphane F.
+	 **/
+	public function staticGroup() {
+
+		echo plxUtils::strCheck($this->plxMotor->aStats[ $this->plxMotor->cible ]['group']);
+	}
+
 	/**
 	 * Méthode qui affiche la date de la dernière modification de la page statique selon le format choisi
 	 *
@@ -1032,7 +1157,7 @@ class plxShow {
 	 * @author	Anthony T.
 	 **/
 	public function staticDate($format='#day #num_day #month #num_year(4)') {
-		
+
 		# On genere le nom du fichier dont on veux récupérer la date
 		$file = PLX_ROOT.$this->plxMotor->aConf['racine_statiques'].$this->plxMotor->cible;
 		$file .= '.'.$this->plxMotor->aStats[ $this->plxMotor->cible ]['url'].'.php';
@@ -1048,7 +1173,7 @@ class plxShow {
 	 *
 	 * @return	stdout
 	 * @scope	static
-	 * @author	Florent MONTHEL
+	 * @author	Florent MONTHEL, Stephane F
 	 **/
 	public function staticContent() {
 
@@ -1058,13 +1183,17 @@ class plxShow {
 			$file = PLX_ROOT.$this->plxMotor->aConf['racine_statiques'].$this->plxMotor->cible;
 			$file .= '.'.$this->plxMotor->aStats[ $this->plxMotor->cible ]['url'].'.php';
 			# Inclusion du fichier
+			ob_start();
 			require $file;
+			$output = ob_get_clean();
+			eval($this->plxMotor->plxPlugins->callHook('plxShowStaticContent'));
+			echo $output;
 		} else {
-			echo '<p>Cette page est actuellement en cours de r&eacute;daction</p>';
+			echo '<p>'.L_STATICCONTENT_INPROCESS.'</p>';
 		}
-			
+
 	}
-	
+
 	/**
 	 * Méthode qui affiche une page statique en lui passant son id (si cette page est active ou non)
 	 *
@@ -1072,9 +1201,10 @@ class plxShow {
 	 * @return	stdout
 	 * @scope	global
 	 * @author	Stéphane F
-	 **/	
+	 **/
 	public function staticInclude($id) {
-		
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowStaticInclude'))) return ;
 		# On génère un nouvel objet plxGlob
 		$plxGlob_stats = plxGlob::getInstance(PLX_ROOT.$this->plxMotor->aConf['racine_statiques']);
 		if($files = $plxGlob_stats->query('/^'.str_pad($id,3,'0',STR_PAD_LEFT).'.[a-z0-9-]+.php$/')) {
@@ -1090,7 +1220,9 @@ class plxShow {
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
 	public function pagination() {
-	
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowPagination'))) return;
+
 		# On verifie que la variable bypage n'est pas nulle
 		if($this->plxMotor->bypage AND $this->plxMotor->plxGlob_arts->count>$this->plxMotor->bypage) {
 			# on supprime le n° de page courante dans l'url
@@ -1110,39 +1242,41 @@ class plxShow {
 			$f_url = $this->plxMotor->urlRewrite('?'.$arg_url.'page1'); # Premiere page
 			# On effectue l'affichage
 			if($this->plxMotor->page > 2) # Si la page active > 2 on affiche un lien 1ere page
-				echo '<span class="p_first"><a href="'.$f_url.'" title="Aller &agrave; la premi&egrave;re page">&lt;&lt;</a></span> | ';
+				echo '<span class="p_first"><a href="'.$f_url.'" title="'.L_PAGINATION_FIRST_TITLE.'">'.L_PAGINATION_FIRST.'</a></span>';
 			if($this->plxMotor->page > 1) # Si la page active > 1 on affiche un lien page precedente
-				echo '<span class="p_prev"><a href="'.$p_url.'" title="Page pr&eacute;c&eacute;dente">&lt; pr&eacute;c&eacute;dente</a></span> | ';
+				echo '<span class="p_prev"><a href="'.$p_url.'" title="'.L_PAGINATION_PREVIOUS_TITLE.'">'.L_PAGINATION_PREVIOUS.'</a></span>';
 			# Affichage de la page courante
-			echo '<span class="p_page">page '.$this->plxMotor->page.' sur '.$last_page.'</span>';
+			printf('<span class="p_page">'.L_PAGINATION.'</span>',$this->plxMotor->page,$last_page);
 			if($this->plxMotor->page < $last_page) # Si la page active < derniere page on affiche un lien page suivante
-				echo ' | <span class="p_next"><a href="'.$n_url.'" title="Page suivante">suivante &gt;</a></span>';
+				echo '<span class="p_next"><a href="'.$n_url.'" title="'.L_PAGINATION_NEXT_TITLE.'">'.L_PAGINATION_NEXT.'</a></span>';
 			if(($this->plxMotor->page + 1) < $last_page) # Si la page active++ < derniere page on affiche un lien derniere page
-				echo ' | <span class="p_last"><a href="'.$l_url.'" title="Aller &agrave; la derni&egrave;re page">&gt;&gt;</a></span>';
+				echo '<span class="p_last"><a href="'.$l_url.'" title="'.L_PAGINATION_LAST_TITLE.'">'.L_PAGINATION_LAST.'</a></span>';
 		}
-	}	
-	
+	}
+
 	/**
 	 * Méthode qui affiche la question du capcha
 	 *
 	 * @return	stdout
 	 * @scope	global
-	 * @author	Florent MONTHEL
+	 * @author	Florent MONTHEL, Stephane F.
 	 **/
 	public function capchaQ() {
-
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowCapchaQ'))) return;
 		echo $this->plxMotor->plxCapcha->q();
 	}
 
 	/**
-	 * Méthode qui affiche la réponse du capcha cryptée en MD5
+	 * Méthode qui affiche la réponse du capcha cryptée en sha1
 	 *
 	 * @return	stdout
 	 * @scope	global
-	 * @author	Florent MONTHEL
+	 * @author	Florent MONTHEL, Stephane F.
 	 **/
 	public function capchaR() {
-
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowCapchaR'))) return;
 		echo $this->plxMotor->plxCapcha->r();
 	}
 
@@ -1157,7 +1291,7 @@ class plxShow {
 
 		echo $this->plxMotor->plxErreur->getMessage();
 	}
-	
+
 	/**
 	 * Méthode qui affiche la liste de tous les tags.
 	 *
@@ -1167,7 +1301,9 @@ class plxShow {
 	 * @scope	global
 	 * @author	Stephane F
 	 **/
-	public function tagList($format='<li><a class="#tag_status" href="#tag_url" title="#tag_name">#tag_name</a></li>', $max='5') {
+	public function tagList($format='<li><a class="#tag_status" href="#tag_url" title="#tag_name">#tag_name</a></li>', $max='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowTagList'))) return;
 
 		$time = @date('YmdHi');
 		$array=array();
@@ -1179,43 +1315,49 @@ class plxShow {
 					if($tags = array_map('trim', explode(',', $tag['tags']))) {
 						foreach($tags as $tag) {
 							if($tag!='') {
-								if(!isset($array[$tag]))
-									$array[$tag]=1;
+								$t = plxUtils::title2url($tag);
+								if(!isset($array['_'.$tag])) {
+									$array['_'.$tag]=array('name'=>$tag,'url'=>$t,'count'=>1);
+								}
 								else
-									$array[$tag]++;
+									$array['_'.$tag]['count']++;
 							}
 						}
 					}
 				}
 			}
+			array_multisort($array);
+			if($max!='') $array=array_slice($array, 0, intval($max), true);
 		}
-		natsort($array);		
-		if(intval($max)>0) $array=array_slice($array, 0, $max, true);
 		# On affiche la liste
 		$size=0;
-		foreach($array as $tagname => $nbtags) {
-			$t = plxUtils::title2url($tagname);
+		foreach($array as $tagname => $tag) {
 			$name = str_replace('#tag_id','tag-'.$size++,$format);
-			$name = str_replace('#tag_url',$this->plxMotor->urlRewrite('?tag/'.$t),$name);
-			$name = str_replace('#tag_name',plxUtils::strCheck($tagname),$name);
-			$name = str_replace('#nb_art',$nbtags,$name);			
-			$name = str_replace('#tag_status',(($this->plxMotor->mode=='tags' AND $this->plxMotor->cible==$t)?'active':'noactive'), $name);			
+			$name = str_replace('#tag_url',$this->plxMotor->urlRewrite('?tag/'.$tag['url']),$name);
+			$name = str_replace('#tag_name',plxUtils::strCheck($tag['name']),$name);
+			$name = str_replace('#nb_art',$tag['count'],$name);
+			$name = str_replace('#tag_status',(($this->plxMotor->mode=='tags' AND $this->plxMotor->cible==$tag['url'])?'active':'noactive'), $name);
 			echo $name;
 		}
 	}
-	
+
 	/**
 	 * Méthode qui affiche la liste des archives
 	 *
-	 * @param	format	format du texte pour l'affichage (variable : #archives_id, #archives_status, #archives_nbart, #archives_url, #archives_name)
+	 * @param	format	format du texte pour l'affichage (variable : #archives_id, #archives_status, #archives_nbart, #archives_url, #archives_name, #archives_month, #archives_year)
 	 * @return	stdout
 	 * @scope	global
 	 * @author	Stephane F
 	 **/
     public function archList($format='<li id="#archives_id"><a class="#archives_status" href="#archives_url" title="#archives_name">#archives_name</a></li>'){
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowArchList'))) return;
+
 		$curYear=date('Y');
         $array = array();
-		if($files = $this->plxMotor->plxGlob_arts->query('/^[0-9]{4}.[home|0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/','art','rsort',0,false,'before')) {
+
+		$plxGlob_arts = clone $this->plxMotor->plxGlob_arts;
+		if($files = $plxGlob_arts->query('/^[0-9]{4}.[home|0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/','art','rsort',0,false,'before')) {
 			foreach($files as $id => $filename){
 				if(preg_match('/([0-9]{4}).([home|0-9,]*).[0-9]{3}.([0-9]{4})([0-9]{2})([0-9]{6}).([a-z0-9-]+).xml$/',$filename,$capture)){
 					if($capture[3]==$curYear) {
@@ -1233,6 +1375,8 @@ class plxShow {
 				foreach($array[$curYear] as $month => $nbarts){
 					$name = str_replace('#archives_id','archives-'.$curYear.$month,$format);
 					$name = str_replace('#archives_name',plxDate::getCalendar('month', $month).' '.$curYear,$name);
+					$name = str_replace('#archives_year',$curYear,$name);
+					$name = str_replace('#archives_month',plxDate::getCalendar('month', $month),$name);
 					$name = str_replace('#archives_url', $this->plxMotor->urlRewrite('?archives/'.$curYear.'/'.$month), $name);
 					$name = str_replace('#archives_nbart',$nbarts,$name);
 					$name = str_replace('#archives_status',(($this->plxMotor->mode=="archives" AND $this->plxMotor->cible==$curYear.$month)?'active':'noactive'), $name);
@@ -1244,6 +1388,8 @@ class plxShow {
 			foreach($array as $year => $nbarts){
 				$name = str_replace('#archives_id','archives-'.$year,$format);
 				$name = str_replace('#archives_name',$year,$name);
+				$name = str_replace('#archives_year',$year,$name);
+				$name = str_replace('#archives_month',$year,$name);
 				$name = str_replace('#archives_url', $this->plxMotor->urlRewrite('?archives/'.$year), $name);
 				$name = str_replace('#archives_nbart',$nbarts,$name);
 				$name = str_replace('#archives_status',(($this->plxMotor->mode=="archives" AND $this->plxMotor->cible==$year)?'active':'noactive'), $name);
@@ -1251,7 +1397,7 @@ class plxShow {
 			}
 		}
     }
-	
+
 	/**
 	 * Méthode qui affiche un lien vers la page blog.php
 	 *
@@ -1261,12 +1407,19 @@ class plxShow {
 	 * @author	Stephane F
 	 **/
     public function pageBlog($format='<li id="#page_id"><a class="#page_status" href="#page_url" title="#page_name">#page_name</a></li>') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowPageBlog'))) return;
 
 		if($this->plxMotor->aConf['homestatic']!='' AND $this->plxMotor->aStats[$this->plxMotor->aConf['homestatic']]['active']) {
 			$name = str_replace('#page_id','page-blog',$format);
-			$name = str_replace('#page_status',(preg_match('/^blog.php/', basename($_SERVER['SCRIPT_NAME']))?'active':'noactive'),$name);
+		//	$name = str_replace('#page_status',(preg_match('/^blog.php/', basename($_SERVER['SCRIPT_NAME']))?'active':'noactive'),$name);
+			if (preg_match('/static/', $_SERVER['QUERY_STRING'])) {
+				$name = str_replace('#page_status','noactive',$name);
+            } else {
+				$name = str_replace('#page_status','active',$name);
+			}
 			$name = str_replace('#page_url','blog.php',$name);
-			$name = str_replace('#page_name','Blog',$name);
+			$name = str_replace('#page_name',L_PAGEBLOG_TITLE,$name);
 			echo $name;
 		}
 	}
@@ -1280,10 +1433,62 @@ class plxShow {
 	 * @author	Stephane F
 	 **/
 	public function templateCss($css_dir='') {
+		# Hook Plugins
+		if(eval($this->plxMotor->plxPlugins->callHook('plxShowTemplateCss'))) return;
+
 		$theme = 'themes/'.$this->plxMotor->style.'/';
 		$css = str_replace('php','css',$this->plxMotor->template);
 		if(is_file($theme.$css))
-			echo "\t".'<link rel="stylesheet" type="text/css" href="'.$theme.$css.'" media="screen" />'."\n";
+			echo "\t".'<link rel="stylesheet" type="text/css" href="'.$theme.$css_dir.$css.'" media="screen" />'."\n";
 	}
+
+	/**
+	 * Méthode qui affiche une clé de traduction appelée à partir du thème
+	 *
+	 * @param	$lang	clé de traduction à afficher
+	 * @return	stdout
+	 * @scope	global
+	 * @author	Stephane F
+	 **/
+	public function lang($key='') {
+		if(isset($this->lang[$key]))
+			echo $this->lang[$key];
+		else
+			echo $key;
+	}
+
+	/**
+	 * Méthode qui renvoit une clé de traduction appelée à partir du thème
+	 *
+	 * @param	$lang	clé de traduction à afficher
+	 * @return	stdout
+	 * @scope	global
+	 * @author	Stephane F
+	 **/
+	public function getLang($key='') {
+		if(isset($this->lang[$key]))
+			return $this->lang[$key];
+		else
+			return $key;
+	}
+
+	/**
+	 * Méthode qui appel un hook à partir du thème
+	 *
+	 * @param	hookName		nom du hook
+	 * @param	echo			affiche le résultat à l'écran si à VRAI, sinon retourne le resultat
+	 * @return	stdout
+	 * @scope	global
+	 * @author	Stephane F
+	 **/
+	public function callHook($hookName, $echo=true) {
+		ob_start();
+		eval($this->plxMotor->plxPlugins->callHook($hookName));
+		if($echo)
+			echo ob_get_clean();
+		else
+			return ob_get_clean();
+	}
+
 }
 ?>

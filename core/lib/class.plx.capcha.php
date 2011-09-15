@@ -8,8 +8,6 @@
  **/
 class plxCapcha {
 
-	public $gds = false; # Grain de sel du hachage
-
 	private $min = false; # Longueur min du mot
 	private $max = false; # Longueur max du mot
 	private $word = false; # Mot du capcha
@@ -27,7 +25,6 @@ class plxCapcha {
 		# Initialisation des variables de classe
 		$this->min = 4;
 		$this->max = 6;
-		$this->gds = 'f5z9Rez6EZ';
 		$this->word = $this->createWord();
 		$this->num = $this->chooseNum();
 		$this->numletter = $this->num2letter();
@@ -75,24 +72,24 @@ class plxCapcha {
 
 		# Num = derniere lettre du mot
 		if($this->num == strlen($this->word))
-			return 'derni&egrave;re';
+			return L_LAST;
 		# On genere un tableau associatif
 		$array = array(
-			'1' => 'premi&egrave;re',
-			'2' => 'deuxi&egrave;me',
-			'3' => 'troisi&egrave;me',
-			'4' => 'quatri&egrave;me',
-			'5' => 'cinqui&egrave;me',
-			'6' => 'sizi&egrave;me',
-			'7' => 'septi&egrave;me',
-			'8' => 'huiti&egrave;me',
-			'9' => 'neuvi&egrave;me',
-			'10' => 'dixi&egrave;me');
+			'1' => L_FIRST,
+			'2' => L_SECOND,
+			'3' => L_THIRD,
+			'4' => L_FOURTH,
+			'5' => L_FIFTH,
+			'6' => L_SIXTH,
+			'7' => L_SEVENTH,
+			'8' => L_EIGTH,
+			'9' => L_NINTH,
+			'10' => L_TENTH);
 		# La valeur existe dans le tableau
 		if(isset($array[ $this->num ]))
 			return $array[ $this->num ];
 		else # Sinon on retourne une valeur generique
-			return $this->num.'.&egrave;me';
+			return $this->num.L_NTH;
 	}
 
 	/**
@@ -102,21 +99,19 @@ class plxCapcha {
 	 * @author	Anthony GUÉRIN, Stéphane F
 	 **/
 	public function q() {
-
 		# Generation de la question capcha
-		return 'Quelle est la <span class="capcha-letter">'.$this->numletter.'</span> lettre du mot <span class="capcha-word">'.$this->word.'</span> ?';
+		return sprintf(L_CAPCHA_QUESTION,$this->numletter,$this->word);
 	}
 
 	/**
-	 * Méthode qui retourne la réponse du capcha (grain de sel + md5)
+	 * Méthode qui retourne la réponse du capcha (sha1)
 	 *
 	 * @return	string
 	 * @author	Anthony GUÉRIN
 	 **/
 	public function r() {
-
 		# Generation du hash de la reponse
-		return md5($this->gds.$this->word[ $this->num-1 ]);
+		return sha1($this->word[$this->num-1]);
 	}
 
 }

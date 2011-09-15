@@ -10,7 +10,7 @@ class plxRecord {
 
 	public $size = false; # Nombre d'elements dans le tableau $result
 	public $i = -1; # Position dans le tableau $result
-	private $result = array(); # Tableau multidimensionnel associatif
+	public $result = array(); # Tableau multidimensionnel associatif
 
 	/**
 	 * Constructeur qui initialise les variables de classe
@@ -27,7 +27,7 @@ class plxRecord {
 	}
 
 	/**
-	 * Méthode qui incrémente judicieusement la variable $i 
+	 * Méthode qui incrémente judicieusement la variable $i
 	 *
 	 * @return	booléen
 	 * @author	Anthony GUÉRIN
@@ -44,7 +44,7 @@ class plxRecord {
 	}
 
 	/**
-	 * Méthode qui récupère la valeur du champ $field 
+	 * Méthode qui récupère la valeur du champ $field
 	 * correspondant à la position courante
 	 *
 	 * @param	field	clef du tableau à retourner

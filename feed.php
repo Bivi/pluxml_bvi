@@ -3,7 +3,7 @@
 #
 # This file is part of PluXml : http://pluxml.org
 #
-# Copyright (c) 2010 Stephane Ferrari and contributors
+# Copyright (c) 2010-2011 Stephane Ferrari and contributors
 # Copyright (c) 2008-2009 Florent MONTHEL and contributors
 # Copyright (c) 2006-2008 Anthony GUERIN
 # Licensed under the GPL license.
@@ -14,6 +14,7 @@
 # Configuration avançée #
 define('PLX_ROOT', './');
 define('PLX_CORE', PLX_ROOT.'core/');
+define('PLX_PLUGINS', PLX_ROOT.'plugins/');
 define('PLX_CONF', PLX_ROOT.'data/configuration/parametres.xml');
 
 # On verifie que PluXml est installé
@@ -23,16 +24,21 @@ if(!file_exists(PLX_CONF)) {
 }
 
 # On inclut les librairies nécessaires
-include_once(PLX_ROOT.'config.php');
-include_once(PLX_CORE.'lib/class.plx.date.php');
-include_once(PLX_CORE.'lib/class.plx.utils.php');
-include_once(PLX_CORE.'lib/class.plx.glob.php');
-include_once(PLX_CORE.'lib/class.plx.record.php');
-include_once(PLX_CORE.'lib/class.plx.motor.php');
-include_once(PLX_CORE.'lib/class.plx.feed.php');
+include(PLX_ROOT.'config.php');
+include(PLX_CORE.'lib/class.plx.date.php');
+include(PLX_CORE.'lib/class.plx.glob.php');
+include(PLX_CORE.'lib/class.plx.utils.php');
+include(PLX_CORE.'lib/class.plx.record.php');
+include(PLX_CORE.'lib/class.plx.motor.php');
+include(PLX_CORE.'lib/class.plx.feed.php');
+include(PLX_CORE.'lib/class.plx.plugins.php');
 
 # Creation de l'objet principal et lancement du traitement
 $plxFeed = new plxFeed(PLX_CONF);
+
+# Chargement du fichier de langue
+loadLang(PLX_CORE.'lang/'.$plxFeed->aConf['default_lang'].'/core.php');
+
 $plxFeed->fprechauffage();
 $plxFeed->fdemarrage();
 

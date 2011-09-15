@@ -14,7 +14,7 @@ class plxGlob {
 	private $dir = false; # Repertoire a checker
 	private $onlyfilename = false; # Booleen indiquant si notre resultat sera relatif ou absolu
 	private $rep = false; # Boolean pour ne lister que les dossiers
-	
+
 	private static $instance = array();
 
 	/**
@@ -40,7 +40,7 @@ class plxGlob {
 	 *
 	 * @param	dir				répertoire à lire
 	 * @param	rep				boolean pour ne prendre que les répertoires sans les fichiers
-	 * @param	onlyfilename	boolean pour ne récupérer que le nom des fichiers sans le chemin	 
+	 * @param	onlyfilename	boolean pour ne récupérer que le nom des fichiers sans le chemin
 	 * @return	objet			return une instance de la classe plxGlob
 	 * @author	Stephane F
 	 **/
@@ -58,7 +58,7 @@ class plxGlob {
 	 * @author	Amaury Graillat
 	 **/
 	private function initCache() {
-		
+
 		if(is_dir($this->dir)) {
 			# On ouvre le repertoire
 			if($dh = opendir($this->dir)) {
@@ -90,12 +90,14 @@ class plxGlob {
 	 *
 	 * @param	motif			motif de recherche des fichiers sous forme d'expression réguliere
 	 * @param	tri				type de recherche (article, commentaire ou autre)
+	 * @param	ordre			type de tri
 	 * @param	publi			recherche des fichiers avant ou après la date du jour
 	 * @return	array ou false
 	 * @author	Anthony GUÉRIN, Florent MONTHEL et Stephane F
 	 **/
-	private function search($motif,$tri,$publi) {
+	private function search($motif,$tri,$ordre,$publi) {
 
+		$array=array();
 		$this->count = 0;
 
 		if($this->aFiles) {
@@ -109,14 +111,15 @@ class plxGlob {
 						# On decoupe le nom du fichier
 						$index = explode('.',$file);
 						# On cree un tableau associatif en choisissant bien nos cles et en verifiant la date de publication
+						$key = ($ordre === 'alpha' ? $index[4].'~'.$index[0] : $index[3].$index[0]);
 						if($publi === 'before' AND $index[3] <= @date('YmdHi'))
-							$array[ $index[3].$index[0] ] = $file;
+							$array[$key] = $file;
 						elseif($publi === 'after' AND $index[3] >= @date('YmdHi'))
-							$array[ $index[3].$index[0] ] = $file;
+							$array[$key] = $file;
 						elseif($publi === 'all')
-							$array[ $index[3].$index[0] ] = $file;
+							$array[$key] = $file;
 						# On verifie que l'index existe
-						if(isset($array[ $index[3].$index[0] ]))
+						if(isset($array[$key]))
 							$this->count++; # On incremente le compteur
 					}
 					elseif($tri === 'com') { # Tri selon les dates de publications (commentaire)
@@ -150,7 +153,7 @@ class plxGlob {
 	}
 
 	/**
-	 * Méthode qui retourne un tableau trié, des fichiers correspondants 
+	 * Méthode qui retourne un tableau trié, des fichiers correspondants
 	 * au motif $motif, respectant les différentes limites
 	 *
 	 * @return	array ou false
@@ -159,17 +162,32 @@ class plxGlob {
 	public function query($motif,$tri='',$ordre='',$depart='0',$limite=false,$publi='all') {
 
 		# Si on a des resultats
-		if($rs = $this->search($motif,$tri,$publi)) {
+		if($rs = $this->search($motif,$tri,$ordre,$publi)) {
 
 			# Ordre de tri du tableau
-			if($ordre === 'sort' AND $tri != '')
-				ksort($rs);
-			elseif($ordre === 'rsort' AND $tri != '')
-				krsort($rs);
-			elseif($ordre === 'sort' AND $tri == '')
-				sort($rs);
-			else
-				rsort($rs);
+			if ($tri != '') {
+				switch ($ordre) {
+					case 'alpha':
+					case 'sort':
+						ksort($rs);
+						break;
+					case 'rsort':
+					default:
+						krsort($rs);
+						break;
+				}
+			} else {
+				switch ($ordre) {
+					case 'alpha':
+					case 'sort':
+						sort($rs);
+						break;
+					case 'rsort':
+					default:
+						rsort($rs);
+						break;
+				}
+			}
 
 			# On enleve les cles du tableau
 			$rs = array_values($rs);

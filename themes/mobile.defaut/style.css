@@ -1,4 +1,4 @@
-/* Theme "mobile.defaut" PluXml - Copyright PluXml.org */  
+/* Theme "mobile.defaut" PluXml - Copyright PluXml.org */
 
 /* ---------------------
 Html et body
@@ -94,8 +94,8 @@ Haut de page (#top)
 	color : #DDDDDD;
 }
 
-/* --------------------- 
-Zone de contenu (#content)  
+/* ---------------------
+Zone de contenu (#content)
 --------------------- */
 #content { /* Bloc */
 	float : left;
@@ -128,7 +128,7 @@ Zone de contenu (#content)
 #content .post-content {
 	margin-top: 5px;
 	display:none;
-	clear:both;	
+	clear:both;
 }
 #content .feeds {
 	padding: 2px 0 5px 0;
@@ -162,8 +162,8 @@ Zone de contenu (#content)
 	background-color : #FFFFFF;
 }
 
-/* --------------------- 
-Paneau lateral (#sidebar)  
+/* ---------------------
+Paneau lateral (#sidebar)
 --------------------- */
 #sidebar {
 	padding : 0; margin : 0 0 5px 0;

@@ -7,6 +7,7 @@
  * @package PLX
  * @author	Stephane F
  **/
+
 class plxDate {
 
 	/**
@@ -30,27 +31,27 @@ class plxDate {
 	public static function getCalendar($key, $value) {
 
 		$aMonth = array(
-			'01' => 'janvier',
-			'02' => 'f&eacute;vrier',
-			'03' => 'mars',
-			'04' => 'avril',
-			'05' => 'mai',
-			'06' => 'juin',
-			'07' => 'juillet',
-			'08' => 'ao&ucirc;t',
-			'09' => 'septembre',
-			'10' => 'octobre',
-			'11' => 'novembre',
-			'12' => 'd&eacute;cembre');	
+			'01' => L_JANUARY,
+			'02' => L_FEBRUARY,
+			'03' => L_MARCH,
+			'04' => L_APRIL,
+			'05' => L_MAY,
+			'06' => L_JUNE,
+			'07' => L_JULY,
+			'08' => L_AUGUST,
+			'09' => L_SEPTEMBER,
+			'10' => L_OCTOBER,
+			'11' => L_NOVEMBER,
+			'12' => L_DECEMBER);
 		$aDay = array(
-			'1' => 'lundi',
-			'2' => 'mardi',
-			'3' => 'mercredi',
-			'4' => 'jeudi',
-			'5' => 'vendredi',
-			'6' => 'samedi',
-			'0' => 'dimanche');
-	
+			'1' => L_MONDAY,
+			'2' => L_TUESDAY,
+			'3' => L_WEDNESDAY,
+			'4' => L_THURSDAY,
+			'5' => L_FRIDAY,
+			'6' => L_SATURDAY,
+			'0' => L_SUNDAY);
+
 		switch ($key) {
 			case 'day':
 				return $aDay[ $value ]; break;
@@ -90,7 +91,7 @@ class plxDate {
 	 *
 	 * @param	date		date au format AAAAMMJJ
 	 * @param	format		format de la date de sortie (variable: #minute,#hour,#day,#month,#num_day,#num_month,#num_year(2),#num_year(4))
-	 * @return	date		date formatée au format humain 
+	 * @return	date		date formatée au format humain
 	 **/
 	public static function dateIsoToHum($date, $format='#day #num_day #month #num_year(4)') {
 
@@ -126,7 +127,7 @@ class plxDate {
 		# On retourne l'heure au format 12:55
 		return substr($date,11,2).':'.substr($date,14,2);
 	}
-	
+
 	/**
 	 * Méthode qui découpe une date ISO dans un tableau (element du tableau: year, month, day, time, delta)
 	 *
@@ -137,8 +138,8 @@ class plxDate {
 
 		preg_match('/([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9:]{8})((\+|-)[0-9:]{5})/',$date,$capture);
 		return array ('year' => $capture[1],'month' => $capture[2],'day' => $capture[3],'time' => substr($capture[4],0,5),'delta' => $capture[5]);
-	}	
-	
+	}
+
 	/**
 	 * Méthode qui vérifie la validité de la date et de l'heure
 	 *
@@ -149,10 +150,24 @@ class plxDate {
 	 * @return	boolean	vrai si la date est valide
 	 **/
 	public static function checkDate($day, $month, $year, $time) {
-		
-		return (preg_match("/^(0[1-9]|[1-2][0-9]|3[0-1])(0[1-9]|1[0-2])20[0-9]{2}([0-1][0-9]|2[0-3])\:[0-5][0-9]$/",$day.$month.$year.$time)
+
+		return (preg_match("/^(0[1-9]|[1-2][0-9]|3[0-1])(0[1-9]|1[0-2])[1-2][0-9]{3}([0-1][0-9]|2[0-3])\:[0-5][0-9]$/",$day.$month.$year.$time)
 			AND checkdate($month, $day, $year));
 
 	}
+
+	/**
+	 * Fonction de conversion de date ISO en format RFC822
+	 *
+	 * @param	date	date à convertir
+	 * @return	string	date au format iso.
+	 * @author	Amaury GRAILLAT
+	 **/
+	public static function dateIso2rfc822($date) {
+
+		$tmpDate = plxDate::dateIso2Admin($date);
+		return @date(DATE_RSS, mktime(substr($tmpDate['time'],0,2), substr($tmpDate['time'],3,2), $tmpDate['second'], $tmpDate['month'], $tmpDate['day'], $tmpDate['year']));
+	}
+
 }
 ?>
