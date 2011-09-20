@@ -1,0 +1,31 @@
+1.1.0
+=====
++ Prise en charge de pluxml 5.1.1
+
+
+1.0.3
+=====
+~ Centrage des informations de pagination.
+
+
+1.0.2 (30 mars 2011)
+====================
+
++ Ajout de classes de paragraphes (float-left & float-right) pour des cadres
+flottants a gauche et a droite du texte principal.
+
+~ Mise a jour de l'apparence des liens actifs dans la barre laterale.
+
+~ Retrait de la liste des derniers commentaires dans la barre laterale.
+
+
+1.0.1 (26 mars 2011)
+====================
+
+~ Correction de l'alignement du sous-titre dans l'en-tete.
+
+
+
+1.0 (22 mars 2011)
+==================
++ Premiere version
