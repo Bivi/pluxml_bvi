@@ -1,5 +1,7 @@
 <?php
 
+include_once dirname(__FILE__)."/../vendor/markdown.php";
+
 /**
  * Classe plxShow responsable de l'affichage sur stdout
  *
@@ -690,14 +692,14 @@ class plxShow {
 			$title = plxUtils::strCheck($this->plxMotor->plxRecord_arts->f('title'));
 			$url = $this->plxMotor->plxRecord_arts->f('url');
 			# On effectue l'affichage
-			echo $this->plxMotor->plxRecord_arts->f('chapo')."\n";
+			echo Markdown($this->plxMotor->plxRecord_arts->f('chapo'))."\n";
 			if($format) {
 				$title = str_replace("#art_title", $title, $format);
 				echo '<p class="more"><a href="'.$this->plxMotor->urlRewrite('?article'.$id.'/'.$url).'" title="'.$title.'">'.$title.'</a></p>'."\n";
 			}
 		} else { # Pas de chapo, affichage du contenu
 			if($content === true) {
-				echo $this->plxMotor->plxRecord_arts->f('content')."\n";
+				echo Markdown($this->plxMotor->plxRecord_arts->f('content'))."\n";
 			}
 		}
 	}
@@ -713,8 +715,8 @@ class plxShow {
 	public function artContent($chapo=true) {
 
 		if($chapo === true)
-			echo $this->plxMotor->plxRecord_arts->f('chapo')."\n"; # Chapo
-		echo $this->plxMotor->plxRecord_arts->f('content')."\n";
+			echo Markdown($this->plxMotor->plxRecord_arts->f('chapo'))."\n"; # Chapo
+		echo Markdown($this->plxMotor->plxRecord_arts->f('content'))."\n";
 
 	}
 
@@ -825,9 +827,9 @@ class plxShow {
 				$row = str_replace('#art_status',$status,$row);
 				$row = str_replace('#art_author',plxUtils::strCheck($this->plxMotor->aUsers[$art['author']]['name']),$row);
 				$row = str_replace('#art_title',plxUtils::strCheck($art['title']),$row);
-				$row = str_replace('#art_chapo',$art['chapo'],$row);
+				$row = str_replace('#art_chapo',Markdown($art['chapo']),$row);
 				$strlength = preg_match('/#art_content\(([0-9]+)\)/',$row,$capture) ? $capture[1] : '100';
-				$content = plxUtils::truncate($art['content'],$strlength,$ending,true,true);
+				$content = plxUtils::truncate(Markdown($art['content']),$strlength,$ending,true,true);
 				$row = str_replace('#art_content('.$strlength.')','#art_content', $row);
 				$row = str_replace('#art_content',$content, $row);
 				$row = str_replace('#art_date',plxDate::dateIsoToHum($date,'#num_day/#num_month/#num_year(4)'),$row);
