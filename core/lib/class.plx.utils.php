@@ -9,6 +9,18 @@
 class plxUtils {
 
 	/**
+	 * Méthode qui vérifie si une variable est définie. 
+	 * Renvoie la valeur de la variable ou la valeur par défaut passée en paramètre
+	 *
+	 * @param	var			string	variable à tester
+	 * @param	default		string	valeur par defaut 
+	 * @return	valeur de la variable ou valeur par défaut passée en paramètre
+	*/
+	public static function getValue(&$var, $default='') {
+		return (isset($var) ? (!empty($var) ? $var : $default) : $default) ;
+	}
+
+	/**
 	 * Méthode qui retourne un tableau contenu les paramètres passés dans l'url de la page courante
 	 *
 	 * @return	array	tableau avec les paramètres passés dans l'url de la page courante
@@ -69,11 +81,17 @@ class plxUtils {
 	 * @param	site		url d'un site
 	 * @return	boolean		vrai si l'url est bien formatée
 	 **/
-	public static function checkSite($site) {
+	public static function checkSite(&$site) {
 
-		# On verifie le site via une expression reguliere
+		$site = preg_replace('#([\'"].*)#', '', $site);
+		# On vérifie le site via une expression régulière
 		# Méthode Jeffrey Friedl - http://mathiasbynens.be/demo/url-regex
-		return preg_match('@\b((ftp|https?)://[-\w]+(\.\w[-\w]*)+|(?:[a-z0-9](?:[-a-z0-9]*[a-z0-9])?\.)+(?: com\b|edu\b|biz\b|gov\b|in(?:t|fo)\b|mil\b|net\b|org\b|[a-z][a-z]\b))(\:\d+)?(/[^.!,?;"\'<>()\[\]{}\s\x7F-\xFF]*(?:[.!,?]+[^.!,?;"\'<>()\[\]{}\s\x7F-\xFF]+)*)?@iS', $site);
+		if(preg_match('@\b((ftp|https?)://[-\w]+(\.\w[-\w]*)+|(?:[a-z0-9](?:[-a-z0-9]*[a-z0-9])?\.)+(?: com\b|edu\b|biz\b|gov\b|in(?:t|fo)\b|mil\b|net\b|org\b|[a-z][a-z]\b))(\:\d+)?(/[^.!,?;"\'<>()\[\]{}\s\x7F-\xFF]*(?:[.!,?]+[^.!,?;"\'<>()\[\]{}\s\x7F-\xFF]+)*)?@iS', $site))
+			return true;
+		else {
+			$site='';
+			return false;
+		}
 	}
 
 	/**
@@ -554,7 +572,7 @@ class plxUtils {
 	public static function rel2abs($base, $html) {
 
 		// url des plugins
-		$html = preg_replace('@<([^>]*) (href|src)=(["\'])[\.]/plugins@i', '<$1 $2=$3'.$base.'plugins', $html);
+		$html = preg_replace('@\<([^>]*) (href|src)=(["\'])[\.]/plugins@i', '<$1 $2=$3'.$base.'plugins', $html);
 		// generate server-only replacement for root-relative URLs
 		$server = preg_replace('@^([^:]+)://([^/]+)(/|$).*@', '\1://\2/', $base);
 		// on repare les liens ne commençant que part #

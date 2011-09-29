@@ -11,7 +11,7 @@ class plxPlugins {
 	public $filename=''; # chemin pour accèder au fichier de configuration plugins.xml
 	public $aPlugins=array(); #tableau contenant les plugins
 
-	private $default_lang; # langue par defaut utilisée par PluXml
+	public $default_lang; # langue par defaut utilisée par PluXml
 
 	/**
 	 * Constructeur de la classe plxPlugins
@@ -139,25 +139,21 @@ class plxPlugins {
 				if($content['action'][$plugName]=='on') {
 					if($instance = $this->getInstance($plugName)) {
 						if($content['selection']=='activate') {
-							# recuperation des infos dans le fichiers infos.xml du plugin
-							//$instance->getInfos();
-							# si toutes les conditions sont ok pour activer le plugin
-							//if($this->checkRequirements($instance->getInfo('requirements'))) {
-								$this->aPlugins[$plugName]['activate']=1;
-								$this->aPlugins[$plugName]['title']=$content['plugTitle'][$plugName];
-								if(method_exists($plugName, 'OnActivate')) $instance->OnActivate();
-							//}
+							if($this->aPlugins[$plugName]['activate']==0 AND method_exists($plugName, 'OnActivate'))
+								$instance->OnActivate();
+							$this->aPlugins[$plugName]['activate']=1;
+							$this->aPlugins[$plugName]['title']=$content['plugTitle'][$plugName];
 						}
 						elseif($content['selection']=='deactivate') {
+							if($this->aPlugins[$plugName]['activate']==1 AND method_exists($plugName, 'OnDeactivate'))
+								$instance->OnDeactivate();
 							$this->aPlugins[$plugName]['activate']=0;
 							$this->aPlugins[$plugName]['title']='';
-							if(method_exists($plugName, 'OnDeactivate')) $instance->OnDeactivate();
 						}
 					}
 				}
 			}
 		}
-
 		# Début du fichier XML
 		$xml = "<?xml version='1.0' encoding='".PLX_CHARSET."'?>\n";
 		$xml .= "<document>\n";

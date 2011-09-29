@@ -9,6 +9,20 @@ include_once dirname(__FILE__)."/../vendor/markdown.php";
  **/
 class plxFeed extends plxMotor {
 
+	private static $instance = null;
+	
+	/**
+	 * Méthode qui se charger de créer le Singleton plxFeed
+	 *
+	 * @return	objet			return une instance de la classe plxFeed
+	 * @author	Stephane F
+	 **/
+	public static function getInstance(){
+		if (!isset(self::$instance))
+			self::$instance = new plxFeed(PLX_CONF);
+		return self::$instance;
+	}
+
 	/**
 	 * Constructeur qui initialise certaines variables de classe
 	 * et qui lance le traitement initial
@@ -17,7 +31,7 @@ class plxFeed extends plxMotor {
 	 * @return	null
 	 * @author	Florent MONTHEL, Stéphane F
 	 **/
-	public function __construct($filename) {
+	protected function __construct($filename) {
 
 		# Version de PluXml
 		if(!is_readable(PLX_ROOT.'version')) {
@@ -44,6 +58,8 @@ class plxFeed extends plxMotor {
 		# Récupération des données dans les autres fichiers xml
 		$this->getCategories(PLX_ROOT.$this->aConf['categories']);
 		$this->getUsers(PLX_ROOT.$this->aConf['users']);
+		# Récuperation des articles appartenant aux catégories actives
+		$this->getActiveArts();		
 		# Hook plugins
 		eval($this->plxPlugins->callHook('plxFeedConstruct'));
 	}
@@ -66,7 +82,7 @@ class plxFeed extends plxMotor {
 			# On récupère la catégorie cible
 			$this->cible = str_pad($capture[2],3,'0',STR_PAD_LEFT); # On complete sur 3 caracteres
 			# On modifie le motif de recherche
-			$this->motif = '/^[0-9]{4}.[home,|0-9,]*'.$this->cible.'[home,|0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
+			$this->motif = '/^[0-9]{4}.[home|'.$this->activeCats.',]*'.$this->cible.'['.$this->activeCats.',]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
 		}
 		elseif($this->get AND preg_match('#^(atom|rss)/commentaires/?$#',$this->get)) {
 			$this->mode = 'commentaire'; # Mode du flux
@@ -76,7 +92,7 @@ class plxFeed extends plxMotor {
 			# On recupere l'article cible
 			$this->cible = str_pad($capture[2],4,'0',STR_PAD_LEFT); # On complete sur 4 caracteres
 			# On modifie le motif de recherche
-			$this->motif = '/^'.$this->cible.'.([0-9,|home]*).[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
+			$this->motif = '/^'.$this->cible.'.[home|'.$this->activeCats.',]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
 		}
 		elseif($this->get AND preg_match('#^admin([a-zA-Z0-9]+)/commentaires/(hors|en)-ligne/?$#',$this->get,$capture)) {
 			$this->mode = 'admin'; # Mode du flux
@@ -90,7 +106,7 @@ class plxFeed extends plxMotor {
 		} else {
 			$this->mode = 'article'; # Mode du flux
 			# On modifie le motif de recherche
-			$this->motif = '/^[0-9]{4}.([0-9,|home]*).[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
+			$this->motif = '/^[0-9]{4}.[home|'.$this->activeCats.',]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
 		}
 		# Hook plugins
 		eval($this->plxPlugins->callHook('plxFeedPreChauffageEnd'));
@@ -139,7 +155,7 @@ class plxFeed extends plxMotor {
 			# Flux des articles d'une catégorie précise
 			if($this->cible) {
 				# On va tester la catégorie
-				if(empty($this->aCats[ $this->cible ])) { # Pas de catégorie, on redirige
+				if(empty($this->aCats[$this->cible]) OR !$this->aCats[$this->cible]['active']) { # Pas de catégorie, on redirige
 					$this->cible = $this->cible + 0;
 					header('Location: '.$this->urlRewrite('?categorie'.$this->cible.'/'));
 					exit;
@@ -252,30 +268,32 @@ class plxFeed extends plxMotor {
 		if($this->plxRecord_coms) {
 			while($this->plxRecord_coms->loop()) {
 				# Traitement initial
-				$artId = $this->plxRecord_coms->f('article') + 0;
-				if($this->cible) { # Commentaires d'un article
-					$title_com = $this->plxRecord_arts->f('title').' - ';
-					$title_com .= 'par '.$this->plxRecord_coms->f('author').' le ';
-					$title_com .= plxDate::dateIsoToHum($this->plxRecord_coms->f('date'),'#day #num_day #month #num_year(4), #hour:#minute');
-					$link_com = $this->urlRewrite('?article'.$artId.'/'.$this->plxRecord_arts->f('url').'/rss#c'.$this->plxRecord_coms->f('numero'));
-				} else { # Commentaires globaux
-					$title_com = $this->plxRecord_coms->f('author').' le ';
-					$title_com .= plxDate::dateIsoToHum($this->plxRecord_coms->f('date'),'#day #num_day #month #num_year(4), #hour:#minute');
-					$link_com = $this->urlRewrite('?article'.$artId.'/#c'.$this->plxRecord_coms->f('numero'));
-				}
-				# On check la date de publication
-				if($this->plxRecord_coms->f('date') > $last_updated)
-					$last_updated = $this->plxRecord_coms->f('date');
+				if(isset($this->activeArts[$this->plxRecord_coms->f('article')])) {
+					$artId = $this->plxRecord_coms->f('article') + 0;
+					if($this->cible) { # Commentaires d'un article
+						$title_com = $this->plxRecord_arts->f('title').' - ';
+						$title_com .= 'par '.$this->plxRecord_coms->f('author').' @ ';
+						$title_com .= plxDate::dateIsoToHum($this->plxRecord_coms->f('date'),'#day #num_day #month #num_year(4), #hour:#minute');
+						$link_com = $this->urlRewrite('?article'.$artId.'/'.$this->plxRecord_arts->f('url').'/rss#c'.$this->plxRecord_coms->f('numero'));
+					} else { # Commentaires globaux
+						$title_com = $this->plxRecord_coms->f('author').' @ ';
+						$title_com .= plxDate::dateIsoToHum($this->plxRecord_coms->f('date'),'#day #num_day #month #num_year(4), #hour:#minute');
+						$link_com = $this->urlRewrite('?article'.$artId.'/#c'.$this->plxRecord_coms->f('numero'));
+					}
+					# On check la date de publication
+					if($this->plxRecord_coms->f('date') > $last_updated)
+						$last_updated = $this->plxRecord_coms->f('date');
 
-				# On affiche le flux dans un buffer
-				$entry .= "\t<item>\n";
-				$entry .= "\t\t".'<title>'.strip_tags(html_entity_decode($title_com, ENT_QUOTES, PLX_CHARSET)).'</title> '."\n";
-				$entry .= "\t\t".'<link>'.$link_com.'</link>'."\n";
-				$entry .= "\t\t".'<guid>'.$link_com.'</guid>'."\n";
-				$entry .= "\t\t".'<description>'.plxUtils::strCheck(strip_tags($this->plxRecord_coms->f('content'))).'</description>'."\n";
-				$entry .= "\t\t".'<pubDate>'.plxDate::dateIso2rfc822($this->plxRecord_coms->f('date')).'</pubDate>'."\n";
-				$entry .= "\t\t".'<dc:creator>'.plxUtils::strCheck($this->plxRecord_coms->f('author')).'</dc:creator>'."\n";
-				$entry .= "\t</item>\n";
+					# On affiche le flux dans un buffer
+					$entry .= "\t<item>\n";
+					$entry .= "\t\t".'<title>'.strip_tags(html_entity_decode($title_com, ENT_QUOTES, PLX_CHARSET)).'</title> '."\n";
+					$entry .= "\t\t".'<link>'.$link_com.'</link>'."\n";
+					$entry .= "\t\t".'<guid>'.$link_com.'</guid>'."\n";
+					$entry .= "\t\t".'<description>'.plxUtils::strCheck(strip_tags($this->plxRecord_coms->f('content'))).'</description>'."\n";
+					$entry .= "\t\t".'<pubDate>'.plxDate::dateIso2rfc822($this->plxRecord_coms->f('date')).'</pubDate>'."\n";
+					$entry .= "\t\t".'<dc:creator>'.plxUtils::strCheck($this->plxRecord_coms->f('author')).'</dc:creator>'."\n";
+					$entry .= "\t</item>\n";
+				}
 			}
 		}
 
@@ -324,7 +342,7 @@ class plxFeed extends plxMotor {
 			while($this->plxRecord_coms->loop()) {
 				$artId = $this->plxRecord_coms->f('article') + 0;
 				$comId = $this->cible.$this->plxRecord_coms->f('article').'.'.$this->plxRecord_coms->f('numero');
-				$title_com = $this->plxRecord_coms->f('author').' le ';
+				$title_com = $this->plxRecord_coms->f('author').' @ ';
 				$title_com .= plxDate::dateIsoToHum($this->plxRecord_coms->f('date'),'#day #num_day #month #num_year(4), #hour:#minute');
 				$link_com = $this->racine.'core/admin/comment.php?c='.$comId;
 				# On check la date de publication

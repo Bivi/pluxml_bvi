@@ -13,6 +13,20 @@ class plxShow {
 	public $plxMotor = false; # Objet plxMotor
 	private $lang; # fichier de traduction du theme
 
+	private static $instance = null;
+
+	/**
+	 * Méthode qui se charger de créer le Singleton plxShow
+	 *
+	 * @return	objet			return une instance de la classe plxShow
+	 * @author	Stephane F
+	 **/
+	public static function getInstance(){
+		if (!isset(self::$instance))
+			self::$instance = new plxShow();
+		return self::$instance;
+	}
+
 	/**
 	 * Constructeur qui initialise l'objet plxMotor par référence
 	 *
@@ -20,9 +34,9 @@ class plxShow {
 	 * @return	null
 	 * @author	Florent MONTHEL
 	 **/
-	public function __construct(&$plxMotor) {
+	protected function __construct() {
 
-		$this->plxMotor = &$plxMotor;
+		$this->plxMotor = plxMotor::getInstance();
 
 		# Chargement du fichier de lang du theme
 		$langfile = PLX_ROOT.'themes/'.$this->plxMotor->style.'/lang/'.$this->plxMotor->aConf['default_lang'].'.php';
@@ -149,7 +163,7 @@ class plxShow {
 	 **/
 	public function chrono() {
 
-		echo round(plxDate::microtime()-$this->plxMotor->start,3).'s';
+		echo round(getMicrotime()-PLX_MICROTIME,3).'s';
 	}
 
 	/**
@@ -300,7 +314,7 @@ class plxShow {
 	 * @scope	global
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
-	public function nbAllCat($format=L_NBALLCAT) {
+	public function nbAllCat($format='#nb') {
 
 		$nb = 0;
 		if($this->plxMotor->aCats) {
@@ -309,6 +323,7 @@ class plxShow {
 					$nb++;
 			}
 		}
+		$nb = $nb==0 ? L_NO_CATEGORY : ($nb==1 ? $nb.' '.L_CATEGORY : $nb.' '.L_CATEGORIES);
 		$txt = str_replace('#nb',$nb,$format);
 		echo $txt;
 	}
@@ -322,9 +337,10 @@ class plxShow {
 	 * @scope	global
 	 * @author	Stephane F
 	 **/
-	public function nbAllArt($format=L_NBALLART, $select='published') {
-
-		$txt = str_replace('#nb',$this->plxMotor->nbArticles($select),$format);
+	public function nbAllArt($format='#nb', $select='published') {
+		$nb = $this->plxMotor->nbArticles($select);
+		$nb = $nb==0 ? L_NO_ARTICLE : ($nb==1 ? $nb.' '.L_ARTICLE : $nb.' '.L_ARTICLES);
+		$txt = str_replace('#nb',$nb,$format);
 		echo $txt;
 	}
 
@@ -337,9 +353,11 @@ class plxShow {
 	 * @scope	global
 	 * @author	Stephane F
 	 **/
-	public function nbAllCom($format=L_NBALLCOM) {
+	public function nbAllCom($format='#nb') {
 
-		$txt = str_replace('#nb',$this->plxMotor->nbComments('online'),$format);
+		$nb = $this->plxMotor->nbComments('online');
+		$nb = $nb==0 ? L_NO_COMMENTS : ($nb==1 ? $nb.' '.L_COMMENT : $nb.' '.L_COMMENTS);
+		$txt = str_replace('#nb',$nb,$format);
 		echo $txt;
 	}
 
@@ -376,7 +394,7 @@ class plxShow {
 				$in = (empty($include) OR preg_match('/('.$include.')/', $k));
 				$ex = (!empty($exclude) AND preg_match('/('.$exclude.')/', $k));
 				if($in AND !$ex) {
-					if(($v['articles'] > 0) AND $v['menu'] == 'oui') { # On a des articles
+					if(($v['articles'] > 0) AND ($v['menu']=='oui') AND $v['active']) { # On a des articles
 						# On modifie nos motifs
 						$name = str_replace('#cat_id','cat-'.intval($k),$format);
 						$name = str_replace('#cat_url',$this->plxMotor->urlRewrite('?categorie'.intval($k).'/'.$v['url']),$name);
@@ -749,17 +767,15 @@ class plxShow {
 	 * @scope	home,categorie,article,tags,archives
 	 * @author	Anthony GUÉRIN, Florent MONTHEL, Stephane F
 	 **/
-	public function artNbCom($format=L_ARTNBCOM) {
-
-		# On recupère le nb de commentaire selon le mode
-		if($this->plxMotor->mode == 'article' AND $this->plxMotor->plxRecord_coms)
-			$nb = intval($this->plxMotor->plxRecord_coms->size);
-		else
-			$nb = intval($this->plxMotor->plxRecord_arts->f('nb_com'));
+	public function artNbCom($format='#nb') {
 
 		# A t'on besoin d'afficher le nb de commentaires ?
-		if((!$this->plxMotor->aConf['allow_com'] OR !$this->plxMotor->plxRecord_arts->f('allow_com')) AND !$nb)
+		if(!$this->plxMotor->aConf['allow_com'] OR !$this->plxMotor->plxRecord_arts->f('allow_com'))
 			return;
+
+		$nb = intval($this->plxMotor->plxRecord_arts->f('nb_com'));
+		$nb = $nb==0 ? L_NO_COMMENTS : ($nb==1 ? $nb.' '.L_COMMENT : $nb.' '.L_COMMENTS);
+
 		# On modifie nos motifs
 		$txt = str_replace('#nb',$nb,$format);
 		# On effectue l'affichage selon le mode
@@ -779,7 +795,7 @@ class plxShow {
 	 * Si la variable $cat_id est renseignée, seulement les articles de cette catégorie seront retournés.
 	 * On tient compte si la catégorie est active
 	 *
-	 * @param	format	format du texte pour chaque article (variable: #art_id, #art_url, #art_status, #art_author, #art_title, #art_chapo, #art_content, #art_content(num), #art_date, #art_hour, #cat_list)
+	 * @param	format	format du texte pour chaque article (variable: #art_id, #art_url, #art_status, #art_author, #art_title, #art_chapo, #art_content, #art_content(num), #art_date, #art_hour, #cat_list, #art_nbcoms)
 	 * @param	max		nombre d'articles maximum
 	 * @param	cat_id	ids des catégories cible
 	 * @param   ending	texte à ajouter en fin de ligne
@@ -790,12 +806,11 @@ class plxShow {
 	public function lastArtList($format='<li><a href="#art_url" title="#art_title">#art_title</a></li>',$max=5,$cat_id='',$ending='') {
 		# Hook Plugins
 		if(eval($this->plxMotor->plxPlugins->callHook('plxShowLastArtList'))) return;
-
 		# Génération de notre motif
 		if(empty($cat_id))
-			$motif = '/^[0-9]{4}.[home|0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
+			$motif = '/^[0-9]{4}.[home|'.$this->plxMotor->activeCats.']*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
 		else
-			$motif = '/^[0-9]{4}.[home|0-9,]*'.str_pad($cat_id,3,'0',STR_PAD_LEFT).'[0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
+			$motif = '/^[0-9]{4}.[home|'.$this->plxMotor->activeCats.']*'.str_pad($cat_id,3,'0',STR_PAD_LEFT).'['.$this->plxMotor->activeCats.']*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/';
 
 		# Nouvel objet plxGlob et récupération des fichiers
 		$plxGlob_arts = clone $this->plxMotor->plxGlob_arts;
@@ -834,6 +849,7 @@ class plxShow {
 				$row = str_replace('#art_content',$content, $row);
 				$row = str_replace('#art_date',plxDate::dateIsoToHum($date,'#num_day/#num_month/#num_year(4)'),$row);
 				$row = str_replace('#art_hour',plxDate::dateIsoToHum($date,'#hour:#minute'),$row);
+				$row = str_replace('#art_nbcoms',$art['nb_com'], $row);
 				# On genère notre ligne
 				echo $row;
 			}
@@ -995,6 +1011,7 @@ class plxShow {
 	 * @author	Florent MONTHEL, Stephane F
 	 **/
 	public function lastComList($format='<li><a href="#com_url">#com_author a dit :</a><br/>#com_content(50)</li>',$max=5,$art_id='') {
+
 		# Hook Plugins
 		if(eval($this->plxMotor->plxPlugins->callHook('plxShowLastComList'))) return;
 
@@ -1004,30 +1021,36 @@ class plxShow {
 		else
 			$motif = '/^'.str_pad($art_id,4,'0',STR_PAD_LEFT).'.[0-9]{10}-[0-9]+.xml$/';
 
+		$count=1;
 		# Nouvel objet plxGlob et récupération des fichiers
 		$plxGlob_coms = clone $this->plxMotor->plxGlob_coms;
-		if($aFiles = $plxGlob_coms->query($motif,'com','rsort',0,$max)) {
-			foreach($aFiles as $v) { # On parcourt tous les fichiers
-				$com = $this->plxMotor->parseCommentaire(PLX_ROOT.$this->plxMotor->aConf['racine_commentaires'].$v);
-
-				$url = '?article'.intval($com['article']).'/#c'.$com['numero'];
-				$date = $com['date'];
-				$content = strip_tags($com['content']);
-				# On modifie nos motifs
-				$row = str_replace('#com_id',$com['numero'],$format);
-				$row = str_replace('#com_url',$this->plxMotor->urlRewrite($url),$row);
-				$row = str_replace('#com_author',$com['author'],$row);
-				while(preg_match('/#com_content\(([0-9]+)\)/',$row,$capture)) {
-					if($com['author'] == 'admin')
-						$row = str_replace('#com_content('.$capture[1].')',plxUtils::strCut($content,$capture[1]),$row);
-					else
-						$row = str_replace('#com_content('.$capture[1].')',plxUtils::strCheck(plxUtils::strCut(plxUtils::strRevCheck($content),$capture[1])),$row);
+		if($aFiles = $plxGlob_coms->query($motif,'com','rsort',0,false)) {
+			# On parcourt les fichiers des commentaires
+			foreach($aFiles as $v) {
+				# On filtre si le commentaire appartient à un article d'une catégorie inactive
+				if(isset($this->plxMotor->activeArts[substr($v,0,4)])) {
+					$com = $this->plxMotor->parseCommentaire(PLX_ROOT.$this->plxMotor->aConf['racine_commentaires'].$v);
+					$url = '?article'.intval($com['article']).'/#c'.$com['numero'];
+					$date = $com['date'];
+					$content = strip_tags($com['content']);
+					# On modifie nos motifs
+					$row = str_replace('#com_id',$com['numero'],$format);
+					$row = str_replace('#com_url',$this->plxMotor->urlRewrite($url),$row);
+					$row = str_replace('#com_author',$com['author'],$row);
+					while(preg_match('/#com_content\(([0-9]+)\)/',$row,$capture)) {
+						if($com['author'] == 'admin')
+							$row = str_replace('#com_content('.$capture[1].')',plxUtils::strCut($content,$capture[1]),$row);
+						else
+							$row = str_replace('#com_content('.$capture[1].')',plxUtils::strCheck(plxUtils::strCut(plxUtils::strRevCheck($content),$capture[1])),$row);
+					}
+					$row = str_replace('#com_content',$content,$row);
+					$row = str_replace('#com_date',plxDate::dateIsoToHum($date,'#num_day/#num_month/#num_year(4)'),$row);
+					$row = str_replace('#com_hour',plxDate::dateIsoToHum($date,'#hour:#minute'),$row);
+					# On genère notre ligne
+					echo $row;
+					$count++;
 				}
-				$row = str_replace('#com_content',$content,$row);
-				$row = str_replace('#com_date',plxDate::dateIsoToHum($date,'#num_day/#num_month/#num_year(4)'),$row);
-				$row = str_replace('#com_hour',plxDate::dateIsoToHum($date,'#hour:#minute'),$row);
-				# On genère notre ligne
-				echo $row;
+				if($count>$max) break;
 			}
 		}
 	}
@@ -1312,8 +1335,8 @@ class plxShow {
 		# On verifie qu'il y a des tags
 		if($this->plxMotor->aTags) {
 			# On liste les tags sans créer de doublon
-			foreach($this->plxMotor->aTags as $tag) {
-				if($tag['date']<=$time AND $tag['active']) {
+			foreach($this->plxMotor->aTags as $idart => $tag) {
+				if(isset($this->plxMotor->activeArts[$idart]) AND $tag['date']<=$time AND $tag['active']) {
 					if($tags = array_map('trim', explode(',', $tag['tags']))) {
 						foreach($tags as $tag) {
 							if($tag!='') {
@@ -1359,9 +1382,10 @@ class plxShow {
         $array = array();
 
 		$plxGlob_arts = clone $this->plxMotor->plxGlob_arts;
-		if($files = $plxGlob_arts->query('/^[0-9]{4}.[home|0-9,]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/','art','rsort',0,false,'before')) {
+
+		if($files = $plxGlob_arts->query('/^[0-9]{4}.[home|'.$this->plxMotor->activeCats.',]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/','art','rsort',0,false,'before')) {
 			foreach($files as $id => $filename){
-				if(preg_match('/([0-9]{4}).([home|0-9,]*).[0-9]{3}.([0-9]{4})([0-9]{2})([0-9]{6}).([a-z0-9-]+).xml$/',$filename,$capture)){
+				if(preg_match('/([0-9]{4}).([home|'.$this->plxMotor->activeCats.',]*).[0-9]{3}.([0-9]{4})([0-9]{2})([0-9]{6}).([a-z0-9-]+).xml$/',$filename,$capture)){
 					if($capture[3]==$curYear) {
 						if(!isset($array[$capture[3]][$capture[4]])) $array[$capture[3]][$capture[4]]=1;
 						else $array[$capture[3]][$capture[4]]++;
@@ -1412,17 +1436,18 @@ class plxShow {
 		# Hook Plugins
 		if(eval($this->plxMotor->plxPlugins->callHook('plxShowPageBlog'))) return;
 
-		if($this->plxMotor->aConf['homestatic']!='' AND $this->plxMotor->aStats[$this->plxMotor->aConf['homestatic']]['active']) {
-			$name = str_replace('#page_id','page-blog',$format);
-		//	$name = str_replace('#page_status',(preg_match('/^blog.php/', basename($_SERVER['SCRIPT_NAME']))?'active':'noactive'),$name);
-			if (preg_match('/static/', $_SERVER['QUERY_STRING'])) {
-				$name = str_replace('#page_status','noactive',$name);
-            } else {
-				$name = str_replace('#page_status','active',$name);
+		if($this->plxMotor->aConf['homestatic']!='' AND isset($this->plxMotor->aStats[$this->plxMotor->aConf['homestatic']])) {
+			if($this->plxMotor->aStats[$this->plxMotor->aConf['homestatic']]['active']) {
+				$name = str_replace('#page_id','page-blog',$format);
+				if (preg_match('/static/', $_SERVER['QUERY_STRING']) or !preg_match('/^blog.php/',basename($_SERVER['SCRIPT_NAME']))) {
+					$name = str_replace('#page_status','noactive',$name);
+				} else {
+					$name = str_replace('#page_status','active',$name);
+				}
+				$name = str_replace('#page_url','blog.php',$name);
+				$name = str_replace('#page_name',L_PAGEBLOG_TITLE,$name);
+				echo $name;
 			}
-			$name = str_replace('#page_url','blog.php',$name);
-			$name = str_replace('#page_name',L_PAGEBLOG_TITLE,$name);
-			echo $name;
 		}
 	}
 

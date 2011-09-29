@@ -89,7 +89,7 @@ a:active, a:hover, a.active, .active a{
 	}
 
 #section{
-	background: #F9F9F9 url('../img/side.jpg') repeat-y 610px 0;
+	background: #F9F9F9 url('img/side.jpg') repeat-y 610px 0;
 	border-top: 1px solid #FFFFFF;
 	border-bottom: 1px solid #EEEEEE;
 	}
@@ -128,7 +128,7 @@ a:active, a:hover, a.active, .active a{
 	}
 
 .art-infos{
-	background: url('../img/border.jpg') repeat-x bottom;
+	background: url('img/border.jpg') repeat-x bottom;
 	margin: 0 0 10px 0;
 	padding: 0 0 20px 0;
 	}
@@ -139,7 +139,7 @@ a:active, a:hover, a.active, .active a{
 	}
 
 .author-infos{
-	background: #ffffff url('../img/border.jpg') repeat-x bottom;
+	background: #ffffff url('img/border.jpg') repeat-x bottom;
 	margin: 0 20px;
 	padding: 10px;
 	}
@@ -189,7 +189,7 @@ a:active, a:hover, a.active, .active a{
 	}
 
 #nav{
-	background: url('../img/border.jpg') repeat-x top;
+	background: url('img/border.jpg') repeat-x top;
 	padding: 8px 20px;
 	}
 
@@ -240,7 +240,7 @@ a:active, a:hover, a.active, .active a{
 /* 4 - Comments & Forms */
 
 #comments{
-	background: url('../img/border.jpg') repeat-x bottom;
+	background: url('img/border.jpg') repeat-x bottom;
 	}
 
 #comments h2{

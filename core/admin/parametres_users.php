@@ -57,28 +57,28 @@ include(dirname(__FILE__).'/top.php');
 	# Initialisation de l'ordre
 	$num = 0;
 	if($plxAdmin->aUsers) {
-		foreach($plxAdmin->aUsers as $userid => $user)	{
-			if (!$user['delete']) {
+		foreach($plxAdmin->aUsers as $_userid => $_user)	{
+			if (!$_user['delete']) {
 				echo '<tr class="line-'.($num%2).'">';
-				echo '<td><input type="checkbox" name="idUser[]" value="'.$userid.'" /><input type="hidden" name="userNum[]" value="'.$userid.'" /></td>';
-				echo '<td>Utilisateur '.$userid.'</td><td>';
-				plxUtils::printInput($userid.'_name', plxUtils::strCheck($user['name']), 'text', '20-255');
+				echo '<td><input type="checkbox" name="idUser[]" value="'.$_userid.'" /><input type="hidden" name="userNum[]" value="'.$_userid.'" /></td>';
+				echo '<td>Utilisateur '.$_userid.'</td><td>';
+				plxUtils::printInput($_userid.'_name', plxUtils::strCheck($_user['name']), 'text', '20-255');
 				echo '</td><td>';
-				plxUtils::printInput($userid.'_login', plxUtils::strCheck($user['login']), 'text', '11-255');
+				plxUtils::printInput($_userid.'_login', plxUtils::strCheck($_user['login']), 'text', '11-255');
 				echo '</td><td>';
-				plxUtils::printInput($userid.'_password', '', 'password', '11-255');
+				plxUtils::printInput($_userid.'_password', '', 'password', '11-255');
 				echo '</td><td>';
-				if($userid=='001') {
-					plxUtils::printSelect($userid.'_profil', $aProfils, $user['profil'], true, 'readonly');
+				if($_userid=='001') {
+					plxUtils::printSelect($_userid.'_profil', $aProfils, $_user['profil'], true, 'readonly');
 					echo '</td><td>';
-					plxUtils::printSelect($userid.'_active', array('1'=>L_YES,'0'=>L_NO), $user['active'], true, 'readonly');
+					plxUtils::printSelect($_userid.'_active', array('1'=>L_YES,'0'=>L_NO), $_user['active'], true, 'readonly');
 				} else {
-					plxUtils::printSelect($userid.'_profil', $aProfils, $user['profil']);
+					plxUtils::printSelect($_userid.'_profil', $aProfils, $_user['profil']);
 					echo '</td><td>';
-					plxUtils::printSelect($userid.'_active', array('1'=>L_YES,'0'=>L_NO), $user['active']);
+					plxUtils::printSelect($_userid.'_active', array('1'=>L_YES,'0'=>L_NO), $_user['active']);
 				}
 				echo '</td>';
-				echo '<td><a href="user.php?p='.$userid.'">'.L_OPTIONS.'</a></td>';
+				echo '<td><a href="user.php?p='.$_userid.'">'.L_OPTIONS.'</a></td>';
 				echo '</tr>';
 			}
 		}

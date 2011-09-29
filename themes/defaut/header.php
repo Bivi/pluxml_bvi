@@ -13,9 +13,9 @@
 	<?php $plxShow->meta('author') ?>
 
 	<link rel="icon" href="<?php $plxShow->template(); ?>/img/favicon.png" />
-	<link rel="stylesheet" type="text/css" href="<?php $plxShow->template(); ?>/css/screen.css" media="screen" />
+	<link rel="stylesheet" type="text/css" href="<?php $plxShow->template(); ?>/style.css" media="screen" />
 	<!--[if IE]>
-		<link rel="stylesheet" type="text/css" href="<?php $plxShow->template(); ?>/css/ie.css" media="screen" />
+		<link rel="stylesheet" type="text/css" href="<?php $plxShow->template(); ?>/ie.css" media="screen" />
 	<![endif]-->
 	<?php $plxShow->templateCss() ?>
 

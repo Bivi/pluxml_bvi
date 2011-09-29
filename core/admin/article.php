@@ -26,19 +26,21 @@ if(isset($_GET['a']) AND !preg_match('/^[0-9]{4}$/',$_GET['a'])) {
 # Formulaire validé
 if(!empty($_POST)) { # Création, mise à jour, suppression ou aperçu
 
+	if(!isset($_POST['catId'])) $_POST['catId']=array();
 	# Titre par défaut si titre vide
 	if(trim($_POST['title'])=='') $_POST['title'] = L_DEFAULT_NEW_ARTICLE_TITLE;
-	# si aucune catégorie sélectionnée on place l'article dans la catégorie "non classé"
-	if(!isset($_POST['catId'])) $_POST['catId']=array('000');
 	# Si demande d'enregistrement en brouillon on ajoute la categorie draft à la liste
-	if(isset($_POST['draft']) AND isset($_POST['catId']) AND !in_array('draft',$_POST['catId'])) $_POST['catId'][] = 'draft';
+	if(isset($_POST['draft']) AND !in_array('draft',$_POST['catId'])) array_unshift($_POST['catId'], 'draft');
+	# si aucune catégorie sélectionnée on place l'article dans la catégorie "non classé"
+	if(sizeof($_POST['catId'])==1 AND $_POST['catId'][0]=='draft') $_POST['catId'][]='000';
+	else $_POST['catId'] = array_filter($_POST['catId'], create_function('$a', 'return $a!="000";'));
 	# Si demande de publication en supprime la catégorie draft si elle existe
 	if(isset($_POST['update']) AND isset($_POST['catId'])) $_POST['catId'] = array_filter($_POST['catId'], create_function('$a', 'return $a!="draft";'));
 	# Si profil PROFIL_WRITER on vérifie l'id du rédacteur connecté et celui de l'article
 	if($_SESSION['profil']==PROFIL_WRITER AND isset($_POST['author']) AND $_SESSION['user']!=$_POST['author']) $_POST['author']=$_SESSION['user'];
 	# Si profil PROFIL_WRITER on vérifie que l'article n'est pas celui d'un autre utilisateur
 	if($_SESSION['profil']==PROFIL_WRITER AND isset($_POST['artId']) AND $_POST['artId']!='0000') {
-		# On valide  rechercher notre article
+		# On valide l'article
 		if(($aFile = $plxAdmin->plxGlob_arts->query('/^'.$_POST['artId'].'.([home[draft|0-9,]*).'.$_SESSION['user'].'.(.+).xml$/')) == false) { # Article inexistant
 			plxMsg::Error(L_ERR_UNKNOWN_ARTICLE);
 			header('Location: index.php');
@@ -169,18 +171,18 @@ if(!empty($_POST)) { # Création, mise à jour, suppression ou aperçu
 include(dirname(__FILE__).'/top.php');
 
 # On construit la liste des utilisateurs
-foreach($plxAdmin->aUsers as $userid => $user) {
-	if($user['active'] AND !$user['delete'] ) {
-		if($user['profil']==PROFIL_ADMIN)
-			$users[L_PROFIL_ADMIN][$userid] = plxUtils::strCheck($user['name']);
-		elseif($user['profil']==PROFIL_MANAGER)
-			$users[L_PROFIL_MANAGER][$userid] = plxUtils::strCheck($user['name']);
-		elseif($user['profil']==PROFIL_MODERATOR)
-			$users[L_PROFIL_MODERATOR][$userid] = plxUtils::strCheck($user['name']);
-		elseif($user['profil']==PROFIL_EDITOR)
-			$users[L_PROFIL_EDITOR][$userid] = plxUtils::strCheck($user['name']);
+foreach($plxAdmin->aUsers as $_userid => $_user) {
+	if($_user['active'] AND !$_user['delete'] ) {
+		if($_user['profil']==PROFIL_ADMIN)
+			$_users[L_PROFIL_ADMIN][$_userid] = plxUtils::strCheck($_user['name']);
+		elseif($_user['profil']==PROFIL_MANAGER)
+			$_users[L_PROFIL_MANAGER][$_userid] = plxUtils::strCheck($_user['name']);
+		elseif($_user['profil']==PROFIL_MODERATOR)
+			$_users[L_PROFIL_MODERATOR][$_userid] = plxUtils::strCheck($_user['name']);
+		elseif($_user['profil']==PROFIL_EDITOR)
+			$_users[L_PROFIL_EDITOR][$_userid] = plxUtils::strCheck($_user['name']);
 		else
-			$users[L_PROFIL_WRITER][$userid] = plxUtils::strCheck($user['name']);
+			$_users[L_PROFIL_WRITER][$_userid] = plxUtils::strCheck($_user['name']);
 	}
 }
 
@@ -214,7 +216,7 @@ $cat_id='000';
 				<p><label for="id_author"><?php echo L_ARTICLE_LIST_AUTHORS ?>&nbsp;:&nbsp;</label></p>
 				<?php
 				if($_SESSION['profil'] < PROFIL_WRITER)
-					plxUtils::printSelect('author', $users, $author);
+					plxUtils::printSelect('author', $_users, $author);
 				else {
 					echo '<input type="hidden" name="author" value="'.$author.'" />';
 					echo '<strong>'.plxUtils::strCheck($plxAdmin->aUsers[$author]['name']).'</strong>';
@@ -229,11 +231,17 @@ $cat_id='000';
 
 				<p><label><?php echo L_ARTICLE_CATEGORIES ?>&nbsp;:</label></p>
 				<?php
+					$selected = (is_array($catId) AND in_array('000', $catId)) ? ' checked="checked"' : '';
+					echo '<input readonly="readonly" disabled="disabled" type="checkbox" id="cat_unclassified" name="catId[]"'.$selected.' value="000" /><label for="cat_unclassified">&nbsp;'. L_UNCLASSIFIED .'</label><br />';
 					$selected = (is_array($catId) AND in_array('home', $catId)) ? ' checked="checked"' : '';
 					echo '<input type="checkbox" id="cat_home" name="catId[]"'.$selected.' value="home" /><label for="cat_home">&nbsp;'. L_CATEGORY_HOME_PAGE .'</label><br />';
 					foreach($plxAdmin->aCats as $cat_id => $cat_name) {
 						$selected = (is_array($catId) AND in_array($cat_id, $catId)) ? ' checked="checked"' : '';
-						echo '<input type="checkbox" id="cat_'.$cat_id.'" name="catId[]"'.$selected.' value="'.$cat_id.'" /><label for="cat_'.$cat_id.'">&nbsp;'.plxUtils::strCheck($cat_name['name']).'</label><br />';
+						echo '<input type="checkbox" id="cat_'.$cat_id.'" name="catId[]"'.$selected.' value="'.$cat_id.'" />';
+						if($plxAdmin->aCats[$cat_id]['active'])
+							echo '<label for="cat_'.$cat_id.'">&nbsp;'.plxUtils::strCheck($cat_name['name']).'</label><br />';
+						else
+							echo '<label for="cat_'.$cat_id.'">&nbsp;<em>'.plxUtils::strCheck($cat_name['name']).'</em></label><br />';
 					}
 				?>
 
@@ -317,10 +325,14 @@ $cat_id='000';
 					<?php plxUtils::printInput('artId',$artId,'hidden'); ?>
 					<p><label for="id_title"><?php echo L_ARTICLE_TITLE ?>&nbsp;:</label></p>
 					<?php plxUtils::printInput('title',plxUtils::strCheck($title),'text','42-255'); ?>
-					<p id="p_chapo"><label for="id_chapo"><?php echo L_HEADLINE_FIELD ?>&nbsp;:</label></p>
-					<?php plxUtils::printArea('chapo',plxUtils::strCheck($chapo),35,8); ?>
+					<p id="p_chapo">
+						<label for="id_chapo"><?php echo L_HEADLINE_FIELD ?>&nbsp;:</label>
+						&nbsp;
+						<a id="toggler_chapo" href="javascript:void(0)" onclick="toggleDiv('toggle_chapo', 'toggler_chapo', '<?php echo L_ARTICLE_CHAPO_DISPLAY ?>','<?php echo L_ARTICLE_CHAPO_HIDE ?>')"><?php echo $chapo==''?L_ARTICLE_CHAPO_DISPLAY:L_ARTICLE_CHAPO_HIDE ?></a>
+					</p>
+					<div id="toggle_chapo"<?php echo $chapo!=''?'':' style="display:none"' ?>><?php plxUtils::printArea('chapo',plxUtils::strCheck($chapo),35,8); ?></div>
 					<p id="p_content"><label for="id_content"><?php echo L_CONTENT_FIELD ?>&nbsp;:</label></p>
-					<?php plxUtils::printArea('content',plxUtils::strCheck($content),35,20); ?>
+					<?php plxUtils::printArea('content',plxUtils::strCheck($content),35,28); ?>
 				</fieldset>
 				<?php eval($plxAdmin->plxPlugins->callHook('AdminArticleContent')) ?>
 			</div>

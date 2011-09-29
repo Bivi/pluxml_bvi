@@ -13,49 +13,58 @@ class plxUpdater {
 
 	public $newVersion = '';
 	public $oldVersion = '' ;
-	public $updateList = array(); # liste des mises à jour disponibles
+	public $allVersions = null;
 
 	public $plxAdmin; # objet plxAdmin
 
 	/**
 	 * Constructeur de la classe plxUpdater
 	 *
+	 * @param	versions	array	liste des versions + script de mise à jour (fichier versions.php)
 	 * @return	null
 	 * @author	Stephane F
 	 **/
-	public function __construct() {
-
-		$this->plxAdmin = new plxAdmin(PLX_CONF);
-
-		$this->checkVersions();
-		$this->getUpdateList();
+	public function __construct($versions) {
+		$this->allVersions = $versions;
+		$this->plxAdmin = plxAdmin::getInstance();
+		$this->getVersions();
 	}
 
 	/**
-	 * Méthode qui chargé de démarrer les mises à jour
+	 * Méthode chargée de démarrer les mises à jour
 	 *
 	 * @param	version		précédente version de pluxml à mettre à jour, sélectionner par l'utilisateur
 	 * @return	null
 	 * @author	Stéphane F
 	 **/
-	public function start($version='') {
-		if($this->update($version))
+	public function startUpdate($version='') {
+
+		# suppression des versions qui ont déjà été mises à jour
+		$offset = array_search($version, array_keys($this->allVersions));
+		if($offset!='') {
+			$this->allVersions= array_slice($this->allVersions, $offset, null, true);
+		}
+
+		# démarrage des mises à jour
+		if($this->doUpdate())
 			$this->updateVersion();
 	}
 
 	/**
-	 * Méthode qui recherche les n° de version de pluxml
+	 * Méthode qui récupère l'ancien et le nouveau n° de version de pluxml
 	 *
 	 * @return	null
 	 * @author	Stéphane F
 	 **/
-	public function checkVersions() {
+	public function getVersions() {
 
-		# Rencherche ancien n° de version de Pluxml à mettre à jour
+		# Récupère l'ancien n° de version de Pluxml
 		if(isset($this->plxAdmin->aConf['version']))
 			$this->oldVersion = $this->plxAdmin->aConf['version'];
+		if(!isset($this->allVersions[$this->oldVersion]))
+			$this->oldVersion='';
 
-		# Nouvelle version de PluXml
+		# Récupère le nouveau n° de version de PluXml
 		if(is_readable(PLX_ROOT.'version')) {
 			$f = file(PLX_ROOT.'version');
 			$this->newVersion = $f['0'];
@@ -76,64 +85,47 @@ class plxUpdater {
 	}
 
 	/**
-	 * Méthode qui récupère la liste des mises à jour disponibles
+	 * Méthode qui execute les mises à jour étape par étape
 	 *
-	 * @return	null
+	 * @return	stdout
 	 * @author	Stéphane F
 	 **/
-	public function getUpdateList() {
-
-		$plxUpdates = plxGlob::getInstance(PLX_UPDATE);
-		if($updates = $plxUpdates->query('/^update_[0-9\-\.]+.php$/')) {
-			foreach($updates as $filename) {
-				preg_match('/^(update_([0-9\-\.]+)).php$/', $filename, $capture);
-				$this->updateList[$capture[2]] = array(
-					'filename' 		=> $filename,
-					'class_name'	=> str_replace('.', '_', $capture[1])
-				);
-			}
-		}
-		ksort($this->updateList);
-
-	}
-
-	/**
-	 * Méthode qui execute les mises à jour étape par étape à partir des fichiers disponibles
-	 *
-	 * @return	null
-	 * @author	Stéphane F
-	 **/
-	public function update($version='') {
+	public function doUpdate() {
 
 		$errors = false;
-		foreach($this->updateList as $num_version => $update) {
+		foreach($this->allVersions as $num_version => $upd_filename) {
 
-			if(($this->oldVersion!='' AND version_compare($num_version,$this->oldVersion,'>')>0) OR ($version!='' AND version_compare($num_version,$version,'>')>0)) {
+			if($upd_filename!='') {
 
 				echo '<p><strong>'.L_UPDATE_INPROGRESS.' '.$num_version.'</strong></p>';
 				# inclusion du fichier de mise à jour
-				include(PLX_UPDATE.$update['filename']);
+				include(PLX_UPDATE.$upd_filename);
+
 				# création d'un instance de l'objet de mise à jour
-				$class_update = new $update['class_name']($this->plxAdmin); # création d'une instance de l'objet de mise à jour
+				$class_name = 'update_'.str_replace('.', '_', $num_version);
+				$class_update = new $class_name($this->plxAdmin);
+
 				# appel des différentes étapes de mise à jour
 				$next = true;
 				$step = 1;
 				while($next AND !$errors) {
 					$method_name = 'step'.$step;
-					if(method_exists($update['class_name'], $method_name)) {
+					if(method_exists($class_name, $method_name)) {
 						if(!$class_update->$method_name($this->plxAdmin)) {
-							$errors = true; # erreur déctectée
+							$errors = true; # erreur détectée
 						} else {
 							$step++; # étape suivante
 							# on recharge l'objet plxAdmin pour prendre en compte les éventuels modifs de la mise à jour
-							$this->plxAdmin = new plxAdmin(PLX_CONF);
+							$this->plxAdmin = plxAdmin::getInstance();
 						}
 					}
 					else $next = false;
 				}
 				echo '<br />';
 			}
+
 		}
+		echo '<br />';
 
 		if($errors)
 			echo '<p class="error">'.L_UPDATE_ERROR.'</p>';
@@ -169,23 +161,17 @@ class plxUpdate {
 	 * Méthode qui met à jour le fichier parametre.xml en important les nouveaux paramètres
 	 *
 	 * @param	new_params		tableau contenant la liste des nouveaux paramètres avec leur valeur par défaut.
-	 * @return	null
+	 * @return	stdio
 	 * @author	Stéphane F
 	 **/
 	public function updateParameters($new_params) {
 
-		$update_require = false;
-
-		foreach($new_params as $k => $v)	{
-			if(!isset($this->plxAdmin->aConf[$k]))
-				$update_require = true;
-			else
-				$new_params[$k] = $this->plxAdmin->aConf[$k];
-		}
-		if($update_require) {
-			return $this->plxAdmin->editConfiguration($this->plxAdmin->aConf, $new_params).'<br />';
-		}
-
+		# enregistrement des nouveaux paramètes
+		$ret = $this->plxAdmin->editConfiguration($this->plxAdmin->aConf, $new_params);
+		# on recharge le fichier de config
+		$this->plxAdmin->getConfiguration(PLX_CONF);
+		# valeur de retour
+		return $ret.'<br />';
 	}
 
 	/**

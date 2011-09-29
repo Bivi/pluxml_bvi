@@ -11,14 +11,20 @@
 #
 # ------------------- END LICENSE BLOCK -------------------
 
+include('../config.php');
+
+# Définition des constantes
 define('PLX_ROOT', '../');
 define('PLX_CORE', PLX_ROOT.'core/');
 define('PLX_PLUGINS', PLX_ROOT.'plugins/');
 define('PLX_CONF', PLX_ROOT.'data/configuration/parametres.xml');
 define('PLX_UPDATER', true);
 
-# On inclut les librairies nécessaires
-include(PLX_ROOT.'config.php');
+# On verifie que PluXml est installé
+if(!file_exists(PLX_CONF)) {
+	header('Location: '.PLX_ROOT.'install.php');
+	exit;
+}
 
 # Chargement des langues
 $lang = DEFAULT_LANG;
@@ -33,6 +39,7 @@ if(version_compare(PHP_VERSION, '5.0.0', '<')){
     exit;
 }
 
+# On inclut les librairies nécessaires
 include(PLX_CORE.'lib/class.plx.date.php');
 include(PLX_CORE.'lib/class.plx.glob.php');
 include(PLX_CORE.'lib/class.plx.utils.php');
@@ -43,6 +50,7 @@ include(PLX_CORE.'lib/class.plx.admin.php');
 include(PLX_CORE.'lib/class.plx.encrypt.php');
 include(PLX_CORE.'lib/class.plx.plugins.php');
 include(PLX_CORE.'lib/class.plx.token.php');
+include(PLX_ROOT.'update/versions.php');
 include(PLX_ROOT.'update/class.plx.updater.php');
 
 # Echappement des caractères
@@ -51,13 +59,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 # Création de l'objet principal et lancement du traitement
-$plxUpdater = new plxUpdater();
+$plxUpdater = new plxUpdater($versions);
 
-foreach($plxUpdater->updateList as $num_version => $infos) {
-	if($num_version!=$plxUpdater->newVersion) {
-		$versions[$num_version] = 'PluXml '.$num_version;
-	}
-}
 ?>
 <?php
 plxUtils::cleanHeaders();
@@ -102,7 +105,7 @@ plxToken::validateFormToken($_POST);
 			<p><strong><?php echo L_UPDATE_WARNING1.' '.$plxUpdater->oldVersion ?></strong></p>
 			<?php if(empty($plxUpdater->oldVersion)) : ?>
 			<p><?php echo L_UPDATE_SELECT_VERSION ?></p>
-			<p><?php plxUtils::printSelect('version',$versions,''); ?></p>
+			<p><?php plxUtils::printSelect('version',array_keys($versions),''); ?></p>
 			<p><?php echo L_UPDATE_WARNING2 ?></p>
 			<?php endif; ?>
 			<p class="msg"><?php echo L_UPDATE_WARNING3 ?></p>
@@ -113,8 +116,8 @@ plxToken::validateFormToken($_POST);
 	<?php else: ?>
 		<div class="panel" style="padding:10px 10px 10px 10px">
 			<?php
-			$version = isset($_POST['version']) ? $_POST['version'] : '';
-			$plxUpdater->start($version);
+			$version = isset($_POST['version']) ? $_POST['version'] : $plxUpdater->oldVersion;
+			$plxUpdater->startUpdate($version);
 			?>
 			<p><a href="<?php echo PLX_ROOT; ?>" title="<?php echo L_UPDATE_BACK ?>"><?php echo L_UPDATE_BACK ?></a></p>
 		</div>

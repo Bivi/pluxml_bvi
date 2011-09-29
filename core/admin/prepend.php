@@ -11,14 +11,13 @@
 #
 # ------------------- END LICENSE BLOCK -------------------
 
-# Configuration avançée #
+include_once('../../config.php');
+
+# Définition des constantes
 define('PLX_ROOT', '../../');
 define('PLX_CORE', PLX_ROOT.'core/');
 define('PLX_PLUGINS', PLX_ROOT.'plugins/');
 define('PLX_CONF', PLX_ROOT.'data/configuration/parametres.xml');
-
-# On démarre la session
-session_start();
 
 # On verifie que PluXml est installé
 if(!file_exists(PLX_CONF)) {
@@ -26,8 +25,16 @@ if(!file_exists(PLX_CONF)) {
 	exit;
 }
 
+# On démarre la session
+session_start();
+
+# Test sur l'identification
+if((!defined('PLX_AUTHPAGE') or PLX_AUTHPAGE !== true) AND (!isset($_SESSION['user']) OR $_SESSION['user']=='')) {
+	header('Location: auth.php?p='.htmlentities($_SERVER['REQUEST_URI']));
+	exit;
+}
+
 # On inclut les librairies nécessaires
-include_once(PLX_ROOT.'config.php');
 include_once(PLX_CORE.'lib/class.plx.date.php');
 include_once(PLX_CORE.'lib/class.plx.glob.php');
 include_once(PLX_CORE.'lib/class.plx.utils.php');
@@ -46,19 +53,13 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') $_POST = plxUtils::unSlash($_POST);
 # On impose le charset
 header('Content-Type: text/html; charset='.PLX_CHARSET);
 
-# Test sur l'identification
-if((!defined('PLX_AUTHPAGE') or PLX_AUTHPAGE !== true) AND (!isset($_SESSION['user']) OR $_SESSION['user']=='')) {
-	header('Location: auth.php?p='.htmlentities($_SERVER['REQUEST_URI']));
-	exit;
-}
-
 # Creation de l'objet principal et premier traitement
-$plxAdmin = new plxAdmin(PLX_CONF);
+$plxAdmin = plxAdmin::getInstance();
 
 # Chargement des fichiers de langue en fonction du profil de l'utilisateur connecté
 if(isset($_SESSION['user']) AND !empty($_SESSION['user'])) {
-	$profil = $plxAdmin->aUsers[$_SESSION['user']];
-	$lang = $profil['lang'];
+	$_profil = $plxAdmin->aUsers[$_SESSION['user']];
+	$lang = $_profil['lang'];
 }
 if(empty($lang)) $lang = $plxAdmin->aConf['default_lang'];
 

@@ -11,6 +11,9 @@
 #
 # ------------------- END LICENSE BLOCK -------------------
 
+include('config.php');
+
+# Définition des constantes
 define('PLX_ROOT', './');
 define('PLX_CORE', PLX_ROOT.'core/');
 define('PLX_PLUGINS', PLX_ROOT.'plugins/');
@@ -23,7 +26,6 @@ if(!file_exists(PLX_CONF)) {
 }
 
 # On inclut les librairies nécessaires
-include(PLX_ROOT.'config.php');
 include(PLX_CORE.'lib/class.plx.date.php');
 include(PLX_CORE.'lib/class.plx.glob.php');
 include(PLX_CORE.'lib/class.plx.utils.php');
@@ -37,7 +39,7 @@ include(PLX_CORE.'lib/class.plx.plugins.php');
 header('Content-Type: text/xml; charset='.PLX_CHARSET);
 
 # Creation de l'objet principal et lancement du traitement
-$plxMotor = new plxMotor(PLX_CONF);
+$plxMotor = plxMotor::getInstance();
 
 # Chargement du fichier de langue
 loadLang(PLX_CORE.'lang/'.$plxMotor->aConf['default_lang'].'/core.php');
@@ -68,7 +70,7 @@ foreach($plxMotor->aStats as $stat_num => $stat_info) {
 }
 # Les catégories
 foreach($plxMotor->aCats as $cat_num => $cat_info) {
-	if($cat_info['menu'] != 'oui' OR $cat_info['articles'] == 0) continue;
+	if($cat_info['menu']!='oui' OR $cat_info['active']==0 OR $cat_info['articles']==0) continue;
 	echo "\n";
 	echo "\t<url>\n";
 	echo "\t\t<loc>".$plxMotor->urlRewrite("?categorie".intval($cat_num)."/".$cat_info['url'])."</loc>\n";
@@ -78,7 +80,7 @@ foreach($plxMotor->aCats as $cat_num => $cat_info) {
 	echo "\t</url>\n";
 }
 # Les articles
-if($aFiles = $plxMotor->plxGlob_arts->query('/^[0-9]{4}.([0-9,|home]*).[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/','art','rsort', 0, false, 'before')) {
+if($aFiles = $plxMotor->plxGlob_arts->query('/^[0-9]{4}.[home|'.$plxMotor->activeCats.',]*.[0-9]{3}.[0-9]{12}.[a-z0-9-]+.xml$/','art','rsort', 0, false, 'before')) {
 	$plxRecord_arts = false;
 	$array=array();
 	foreach($aFiles as $k=>$v) { # On parcourt tous les fichiers

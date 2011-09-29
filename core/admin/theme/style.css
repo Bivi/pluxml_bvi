@@ -11,7 +11,6 @@ h2 {
 }
 h3 {
 	font-size: 13px;
-	text-transform: uppercase;
 }
 a {
 	color:#2175bd;
@@ -40,6 +39,15 @@ a.selected {color:#444 !important}
 .left { text-align:left; }
 .right { text-align:right; }
 .top { vertical-align:top }
+
+a.hcolumn {
+	color:#000;
+	text-decoration:underline;
+}
+a.hcolumn:hover {
+	color:#000;
+	text-decoration:none;
+}
 
 #sitename {
 	font-size: 12px;
@@ -373,7 +381,7 @@ tr.plugins-1 {
 th.checkbox { width: 5px; }
 th.date { width:65px; }
 th.title { }
-th.category { width:150px; }
+th.category { width:250px; white-space: nowrap; }
 th.nbcoms { width: 50px; }
 th.author { width:130px; }
 th.action { width: 150px; }

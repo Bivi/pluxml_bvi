@@ -22,46 +22,50 @@ if(isset($_POST['selection']) AND ($_POST['selection'][0] == 'delete' OR $_POST[
 	exit;
 }
 
-# récuperation de la catégorie sélectionnée
-$sel='all';
-if(!empty($_POST['sel']))
-	$sel = $_POST['sel'];
-elseif(!empty($_GET['sel']))
-	$sel = plxUtils::nullbyteRemove($_GET['sel']);
-else {
-	$sel = ((isset($_SESSION['selCat']) AND !empty($_SESSION['selCat'])) ? $_SESSION['selCat'] : 'all');
-}
-
 # Récuperation de l'id de l'utilisateur
 $userId = ($_SESSION['profil'] < PROFIL_WRITER ? '[0-9]{3}' : $_SESSION['user']);
 
-$catNum = str_pad($sel,3,'0',STR_PAD_LEFT);
-if(preg_match('/^[0-9]{3}$/',$catNum)) {
-	$catIdSel = '[home|draft|0-9,]*'.$catNum.'[0-9,]*';
-	$_SESSION['selCat'] = $catNum;
-	$nbArtPagination = $plxAdmin->nbArticles($catIdSel, $userId);
+# Récuperation des paramètres
+if(!empty($_GET['sel']) AND in_array($_GET['sel'], array('all','published', 'draft'))) {
+	$_SESSION['sel_get']=plxUtils::nullbyteRemove($_GET['sel']);
+	$_SESSION['sel_cat']='';
 }
-elseif($sel=='home') {
-	$catIdSel = '[home]*';
-	$_SESSION['selCat'] = 'home';
-	$nbArtPagination = $plxAdmin->nbArticles('home', $userId);
-}
-elseif($sel=='published') {
-	$catIdSel = '[home|0-9,]*';
-	$_SESSION['selCat'] = 'all';
-	$nbArtPagination = $plxAdmin->nbArticles('published', $userId);
-}
-elseif($sel=='draft') {
-    $catIdSel = '[\w,]*[draft][\w,]*';
-	$_SESSION['selCat'] = 'all';
-	$nbArtPagination = $plxAdmin->nbArticles('draft', $userId);
-}
-else { // all
-	$catIdSel = '[home|draft|0-9,]*';
-	$_SESSION['selCat'] = 'all';
-	$nbArtPagination = $plxAdmin->nbArticles('all', $userId);
+else
+	$_SESSION['sel_get']=(isset($_SESSION['sel_get']) AND !empty($_SESSION['sel_get']))?$_SESSION['sel_get']:'all';
+	
+if(!empty($_POST['sel_cat']))
+	if(isset($_SESSION['sel_cat']) AND $_SESSION['sel_cat']==$_POST['sel_cat']) # annulation du filtre
+		$_SESSION['sel_cat']='all';
+	else # prise en compte du filtre
+		$_SESSION['sel_cat']=$_POST['sel_cat'];
+else
+	$_SESSION['sel_cat']=(isset($_SESSION['sel_cat']) AND !empty($_SESSION['sel_cat']))?$_SESSION['sel_cat']:'all';
+
+# Recherche du motif de sélection des articles en fonction des paramèters
+$catIdSel = '';
+switch ($_SESSION['sel_get']) {
+case 'published': 
+	$catIdSel = '[home|0-9,]*FILTER[home|0-9,]*'; break;
+case 'draft': 
+	$catIdSel = '[home|0-9,]*draft,FILTER[home|0-9,]*'; break;
+case 'all': 
+	$catIdSel = '[home|draft|0-9,]*FILTER[draft|home|0-9,]*'; break;
 }
 
+switch ($_SESSION['sel_cat']) {
+case 'all' :
+	$catIdSel = str_replace('FILTER', '', $catIdSel); break;
+case '000' : 
+	$catIdSel = str_replace('FILTER', '000', $catIdSel); break;
+case 'home': 
+	$catIdSel = str_replace('FILTER', 'home', $catIdSel); break;
+case preg_match('/^[0-9]{3}$/', $_SESSION['sel_cat'])==1:
+	$catIdSel = str_replace('FILTER', $_SESSION['sel_cat'], $catIdSel);
+}
+
+# Nombre d'article sélectionnés
+$nbArtPagination = $plxAdmin->nbArticles($catIdSel, $userId);
+	
 # Récuperation du texte à rechercher
 $_GET['artTitle'] = (!empty($_GET['artTitle']))?plxUtils::unSlash(trim(urldecode($_GET['artTitle']))):'';
 
@@ -116,15 +120,13 @@ include(dirname(__FILE__).'/top.php');
 <form action="index.php" method="post" id="form_articles">
 
 <p class="breadcrumbs">
-	<a <?php echo ($_SESSION['selCat']=='all')?'class="selected" ':'' ?>href="index.php?sel=all&amp;page=1"><?php echo L_ALL ?></a>&nbsp;(<?php echo $plxAdmin->nbArticles('all', $userId) ?>)&nbsp;|&nbsp;
-	<a <?php echo ($_SESSION['selCat']=='published')?'class="selected" ':'' ?>href="index.php?sel=published&amp;page=1"><?php echo L_ALL_PUBLISHED ?></a>&nbsp;(<?php echo $plxAdmin->nbArticles('published', $userId) ?>)&nbsp;|&nbsp;
-	<a <?php echo ($_SESSION['selCat']=='draft')?'class="selected" ':'' ?>href="index.php?sel=draft&amp;page=1"><?php echo L_ALL_DRAFTS ?></a>&nbsp;(<?php echo $plxAdmin->nbArticles('draft', $userId) ?>)
+	<a <?php echo ($_SESSION['sel_get']=='all')?'class="selected" ':'' ?>href="index.php?sel=all&amp;page=1"><?php echo L_ALL ?></a>&nbsp;(<?php echo $plxAdmin->nbArticles('all', $userId) ?>)&nbsp;|&nbsp;
+	<a <?php echo ($_SESSION['sel_get']=='published')?'class="selected" ':'' ?>href="index.php?sel=published&amp;page=1"><?php echo L_ALL_PUBLISHED ?></a>&nbsp;(<?php echo $plxAdmin->nbArticles('published', $userId) ?>)&nbsp;|&nbsp;
+	<a <?php echo ($_SESSION['sel_get']=='draft')?'class="selected" ':'' ?>href="index.php?sel=draft&amp;page=1"><?php echo L_ALL_DRAFTS ?></a>&nbsp;(<?php echo $plxAdmin->nbArticles('draft', $userId) ?>)
 </p>
 <p>
 	<?php plxUtils::printSelect('selection[]', array( '' => L_FOR_SELECTION, 'delete' => L_DELETE), '', false, '', false) ?>
 	<input class="button submit" type="submit" name="submit" value="<?php echo L_OK ?>" />
-	<?php plxUtils::printSelect('sel', $aFilterCat, $_SESSION['selCat']) ?>
-	<input class="button submit<?php echo $_SESSION['selCat']!='all'?' select':'' ?>" type="submit" name="submit" value="<?php echo L_ARTICLES_FILTER_BUTTON ?>" />
 </p>
 
 <table class="table">
@@ -133,7 +135,10 @@ include(dirname(__FILE__).'/top.php');
 		<th class="checkbox"><input type="checkbox" onclick="checkAll(this.form, 'idArt[]')" /></th>
 		<th class="date"><?php echo L_ARTICLE_LIST_DATE ?></th>
 		<th class="title"><?php echo L_ARTICLE_LIST_TITLE ?></th>
-		<th class="category"><?php echo L_ARTICLE_LIST_CATEGORIES ?></th>
+		<th class="category">
+			<?php plxUtils::printSelect('sel_cat', $aFilterCat, $_SESSION['sel_cat']) ?>
+			<input class="button submit<?php echo $_SESSION['sel_cat']!='all'?' select':'' ?>" type="submit" name="submit" value="<?php echo L_ARTICLES_FILTER_BUTTON ?>" />
+		</th>
 		<th class="nbcoms"><?php echo L_ARTICLE_LIST_NBCOMS ?></th>
 		<th class="author"><?php echo L_ARTICLE_LIST_AUTHOR ?></th>
 		<th class="action"><?php echo L_ARTICLE_LIST_ACTION ?></th>
@@ -217,10 +222,10 @@ if($arts) { # Si on a des articles (hors page)
 	$next_page = $plxAdmin->page + 1;
 	# Generation des URLs
 	$artTitle = (!empty($_GET['artTitle'])?'&amp;artTitle='.urlencode($_GET['artTitle']):'');
-	$p_url = 'index.php?page='.$prev_page.'&amp;sel='.$_SESSION['selCat'].$artTitle; # Page precedente
-	$n_url = 'index.php?page='.$next_page.'&amp;sel='.$_SESSION['selCat'].$artTitle; # Page suivante
-	$l_url = 'index.php?page='.$last_page.'&amp;sel='.$_SESSION['selCat'].$artTitle; # Derniere page
-	$f_url = 'index.php?page=1'.'&amp;sel='.$_SESSION['selCat'].$artTitle; # Premiere page
+	$p_url = 'index.php?page='.$prev_page.$artTitle; # Page precedente
+	$n_url = 'index.php?page='.$next_page.$artTitle; # Page suivante
+	$l_url = 'index.php?page='.$last_page.$artTitle; # Derniere page
+	$f_url = 'index.php?page=1'.$artTitle; # Premiere page
 	# On effectue l'affichage
 	if($plxAdmin->page > 2) # Si la page active > 2 on affiche un lien 1ere page
 		echo '<span class="p_first"><a href="'.$f_url.'" title="'.L_PAGINATION_FIRST_TITLE.'">'.L_PAGINATION_FIRST.'</a></span>';

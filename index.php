@@ -10,15 +10,13 @@
 # See http://www.gnu.org/licenses/gpl.html
 #
 # ------------------- END LICENSE BLOCK -------------------
+include('config.php');
 
-# Configuration avançée #
+# Définition des constantes
 define('PLX_ROOT', './');
 define('PLX_CORE', PLX_ROOT.'core/');
 define('PLX_PLUGINS', PLX_ROOT.'plugins/');
 define('PLX_CONF', PLX_ROOT.'data/configuration/parametres.xml');
-
-# On démarre la session
-session_start();
 
 # On verifie que PluXml est installé
 if(!file_exists(PLX_CONF)) {
@@ -26,8 +24,10 @@ if(!file_exists(PLX_CONF)) {
 	exit;
 }
 
+# On démarre la session
+session_start();
+
 # On inclut les librairies nécessaires
-include(PLX_ROOT.'config.php');
 include(PLX_CORE.'lib/class.plx.date.php');
 include(PLX_CORE.'lib/class.plx.glob.php');
 include(PLX_CORE.'lib/class.plx.utils.php');
@@ -41,7 +41,7 @@ include(PLX_CORE.'lib/class.plx.encrypt.php');
 include(PLX_CORE.'lib/class.plx.plugins.php');
 
 # Creation de l'objet principal et lancement du traitement
-$plxMotor = new plxMotor(PLX_CONF);
+$plxMotor = plxMotor::getInstance();
 
 # Hook Plugins
 eval($plxMotor->plxPlugins->callHook('Index'));
@@ -53,7 +53,7 @@ $plxMotor->prechauffage();
 $plxMotor->demarrage();
 
 # Creation de l'objet d'affichage
-$plxShow = new plxShow($plxMotor);
+$plxShow = plxShow::getInstance();
 
 # On démarre la bufferisation
 ob_start();
