@@ -29,7 +29,7 @@ if(isset($_GET['a']) AND !preg_match('/^[0-9]{4}$/',$_GET['a'])) {
 if(!empty($_POST) AND !empty($_POST['comId'])) {
 
 	# validation du numero de commentaire
-	if(!preg_match('/^_?[0-9]{4}.[0-9]{10}-[0-9]+$/', $_POST['comId'])) {
+	if(!preg_match('/[[:punct:]]?[0-9]{4}.[0-9]{10}-[0-9]+$/', $_POST['comId'])) {
 		plxMsg::Error(L_ERR_UNKNOWN_COMMENT);
 		header('Location: comments.php');
 		exit;
@@ -41,10 +41,17 @@ if(!empty($_POST) AND !empty($_POST['comId'])) {
 		header('Location: comments.php');
 		exit;
 	}
-	# Modération ou validation
-	if(isset($_POST['mod'])) {
+	# Commentaire en ligne
+	if(isset($_POST['online'])) {
 		$plxAdmin->editCommentaire($_POST,$_POST['comId']);
-		$plxAdmin->modCommentaire($_POST['comId']);
+		$plxAdmin->modCommentaire($_POST['comId'],'online');
+		header('Location: comment.php?c='.$_POST['comId'].(!empty($_GET['a'])?'&a='.$_GET['a']:''));
+		exit;
+	}
+	# Commentaire hors-ligne
+	if(isset($_POST['offline'])) {
+		$plxAdmin->editCommentaire($_POST,$_POST['comId']);
+		$plxAdmin->modCommentaire($_POST['comId'],'offline');
 		header('Location: comment.php?c='.$_POST['comId'].(!empty($_GET['a'])?'&a='.$_GET['a']:''));
 		exit;
 	}
@@ -81,12 +88,16 @@ if(($aFile = $plxAdmin->plxGlob_arts->query('/^'.$artId.'.(.+).xml$/','','sort',
 	$article = '<a href="'.$plxAdmin->aConf['racine'].'index.php?article'.intval($result['numero']).'/'.$result['url'].'" title="'.L_COMMENT_ARTICLE_LINKED_TITLE.'">';
 	$article .= plxUtils::strCheck($result['title']);
 	$article .= '</a>';
-	# Statut du commentaire
-	if(preg_match('/^_/',$_GET['c']))
-		$statut = '<strong>'.L_COMMENT_OFFLINE.'</strong>';
-	else
-		$statut = '<a href="'.PLX_ROOT.'?article'.intval($plxAdmin->plxRecord_coms->f('article')).'/#c'.$plxAdmin->plxRecord_coms->f('numero').'" title="'.L_COMMENT_ONLINE_TITLE.'">'.L_COMMENT_ONLINE.'</a>';
 }
+
+# Statut du commentaire
+$com=$plxAdmin->comInfoFromFilename($_GET['c'].'.xml');
+if($com['comStatus']=='_')
+	$statut = '<strong>'.L_COMMENT_OFFLINE.'</strong>';
+elseif($com['comStatus']=='')
+	$statut = '<a href="'.PLX_ROOT.'?article'.intval($plxAdmin->plxRecord_coms->f('article')).'/#c'.$plxAdmin->plxRecord_coms->f('numero').'" title="'.L_COMMENT_ONLINE_TITLE.'">'.L_COMMENT_ONLINE.'</a>';
+else
+	$statut = '';
 
 # On inclut le header
 include(dirname(__FILE__).'/top.php');
@@ -137,11 +148,11 @@ include(dirname(__FILE__).'/top.php');
 			<?php echo plxToken::getTokenPostMethod() ?>
 			<input class="button delete" type="submit" name="delete" value="<?php echo L_DELETE ?>" onclick="Check=confirm('<?php echo L_COMMENT_DELETE_CONFIRM ?>');if(Check==false) return false;"/>
 			&nbsp;&nbsp;&nbsp;&nbsp;
-			<?php if(preg_match('/^_/',$_GET['c'])) : ?>
-				<input class="button submit" type="submit" name="mod" value="<?php echo L_COMMENT_PUBLISH_BUTTON ?>" />
-			<?php else : ?>
-				<input class="button submit" type="submit" name="mod" value="<?php echo L_COMMENT_OFFLINE_BUTTON ?>" />
+			<?php if($com['comStatus']=='') : ?>
+				<input class="button submit" type="submit" name="offline" value="<?php echo L_COMMENT_OFFLINE_BUTTON ?>" />
 				<input class="button submit" type="submit" name="answer" value="<?php echo L_COMMENT_ANSWER_BUTTON ?>" />
+			<?php else : ?>
+				<input class="button submit" type="submit" name="online" value="<?php echo L_COMMENT_PUBLISH_BUTTON ?>" />
 			<?php endif; ?>
 			<input class="button update" type="submit" name="update" value="<?php echo L_COMMENT_UPDATE_BUTTON ?>" />
 		</p>

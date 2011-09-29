@@ -71,6 +71,40 @@ elseif(isset($_POST['selection']) AND ($_POST['selection'][0] == 'move' OR $_POS
 	header('Location: medias.php');
 	exit;
 }
+elseif(isset($_POST['selection']) AND ($_POST['selection'][0] == 'thumbs' OR $_POST['selection'][1] == 'thumbs') AND isset($_POST['idFile'])) {
+	$plxMedias->makeThumbs($_POST['idFile'], $plxAdmin->aConf['miniatures_l'], $plxAdmin->aConf['miniatures_h']);
+	header('Location: medias.php');
+	exit;
+}
+
+# Tri de l'affichage des fichiers
+if(isset($_POST['sort']) AND !empty($_POST['sort'])) {
+	$sort = $_POST['sort'];
+} else {
+	$sort = isset($_SESSION['sort_medias']) ? $_SESSION['sort_medias'] : 'title_asc';
+}
+
+$sort_title = 'title_desc';
+$sort_date = 'date_desc';
+switch ($sort) {
+	case 'title_asc':
+		$sort_title = 'title_desc';
+		usort($plxMedias->aFiles, create_function('$b, $a', 'return strcmp($a["name"], $b["name"]);'));
+		break;
+	case 'title_desc':
+		$sort_title = 'title_asc';
+		usort($plxMedias->aFiles, create_function('$a, $b', 'return strcmp($a["name"], $b["name"]);'));
+		break;
+	case 'date_asc':
+		$sort_date = 'date_desc';
+		usort($plxMedias->aFiles, create_function('$b, $a', 'return strcmp($a["date"], $b["date"]);'));
+		break;
+	case 'date_desc':
+		$sort_date = 'date_asc';
+		usort($plxMedias->aFiles, create_function('$a, $b', 'return strcmp($a["date"], $b["date"]);'));
+		break;
+}
+$_SESSION['sort_medias']=$sort;
 
 # On inclut le header
 include(dirname(__FILE__).'/top.php');
@@ -118,6 +152,10 @@ function toggle_divs(){
 							echo '<li><input type="radio" name="resize" value="'.$redim.'" />&nbsp;'.$redim.'</li>';
 						}
 					?>
+					<li>
+						<input type="radio" name="thumb" value="<?php echo intval($plxAdmin->aConf['images_l' ]).'x'.intval($plxAdmin->aConf['images_h' ]) ?>" />&nbsp;<?php echo intval($plxAdmin->aConf['images_l' ]).'x'.intval($plxAdmin->aConf['images_h' ]) ?>
+						&nbsp;&nbsp;(<a href="parametres_affichage.php"><?php echo L_MEDIAS_MODIFY ?>)</a>
+					</li>
 					<li>
 						<input type="radio" name="resize" value="user" />&nbsp;
 						<input type="text" size="2" maxlength="4" name="user_w" />&nbsp;x&nbsp;
@@ -182,7 +220,7 @@ function toggle_divs(){
 		</div>
 		<div class="files">
 			<p style="margin-bottom:15px">
-				<?php plxUtils::printSelect('selection[]', array( '' =>L_FOR_SELECTION, 'delete' =>L_DELETE, 'move'=>L_PLXMEDIAS_MOVE_FOLDER), '', false, '', false) ?>
+				<?php plxUtils::printSelect('selection[]', array('' =>L_FOR_SELECTION, 'move'=>L_PLXMEDIAS_MOVE_FOLDER, 'thumbs'=>L_MEDIAS_RECREATE_THUMB, '-'=>'-----', 'delete' =>L_DELETE), '', false, '', false) ?>
 				<input class="button submit" type="submit" name="btn_action" value="<?php echo L_OK ?>" />
 			</p>
 			<table class="table">
@@ -190,11 +228,11 @@ function toggle_divs(){
 			<tr>
 				<th class="checkbox"><input type="checkbox" onclick="checkAll(this.form, 'idFile[]')" /></th>
 				<th class="image">&nbsp;</th>
-				<th><?php echo L_MEDIAS_FILENAME ?></th>
+				<th><a href="javascript:void(0)" class="hcolumn" onclick="document.forms[1].sort.value='<?php echo $sort_title ?>';document.forms[1].submit();return true;"><?php echo L_MEDIAS_FILENAME ?></a></th>
 				<th class="infos"><?php echo L_MEDIAS_EXTENSION ?></th>
 				<th class="infos"><?php echo L_MEDIAS_FILESIZE ?></th>
 				<th class="infos"><?php echo L_MEDIAS_DIMENSIONS ?></th>
-				<th class="date"><?php echo L_MEDIAS_DATE ?></th>
+				<th class="date"><a href="javascript:void(0)" class="hcolumn" onclick="document.forms[1].sort.value='<?php echo $sort_date ?>';document.forms[1].submit();return true;"><?php echo L_MEDIAS_DATE ?></a></th>
 			</tr>
 			</thead>
 			<tbody>
@@ -203,10 +241,10 @@ function toggle_divs(){
 			$num = 0;
 			# Si on a des fichiers
 			if($plxMedias->aFiles) {
-				foreach($plxMedias->aFiles as $k=>$v) { # Pour chaque fichier
+				foreach($plxMedias->aFiles as $v) { # Pour chaque fichier
 					$ordre = ++$num;
 					echo '<tr class="line-'.($num%2).'">';
-					echo '<td><input type="checkbox" name="idFile[]" value="'.$k.'" /></td>';
+					echo '<td><input type="checkbox" name="idFile[]" value="'.$v['name'].'" /></td>';
 					echo '<td class="icon"><a onclick="this.target=\'_blank\';return true;" title="'.plxUtils::strCheck($v['name']).'" href="'.$v['path'].'"><img alt="" src="'.$v['.thumb'].'" class="thumb" /></a></td>';
 					echo '<td>';
 					echo '<a onclick="this.target=\'_blank\';return true;" title="'.plxUtils::strCheck($v['name']).'" href="'.$v['path'].'">'.plxUtils::strCheck($v['name']).'</a><br />';
@@ -230,8 +268,9 @@ function toggle_divs(){
 			</tbody>
 			</table>
 			<p>
-				<?php plxUtils::printSelect('selection[]', array( '' =>L_FOR_SELECTION, 'delete' =>L_DELETE, 'move'=>L_PLXMEDIAS_MOVE_FOLDER), '', false, '', false) ?>
+				<?php plxUtils::printSelect('selection[]', array('' =>L_FOR_SELECTION, 'move'=>L_PLXMEDIAS_MOVE_FOLDER, 'thumbs'=>L_MEDIAS_RECREATE_THUMB, '-'=>'-----', 'delete' =>L_DELETE), '', false, '', false) ?>
 				<input class="button submit" type="submit" name="btn_action" value="<?php echo L_OK ?>" />
+				<input type="hidden" name="sort" value="" />
 			</p>
 		</div>
 	</form>

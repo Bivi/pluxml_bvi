@@ -6,7 +6,24 @@
  * @package PLX
  * @author	Anthony GUÉRIN, Florent MONTHEL et Stephane F
  **/
+
+define('PLX_ADMIN', true);
+
 class plxAdmin extends plxMotor {
+
+	private static $instance = null;
+
+	/**
+	 * Méthode qui se charger de créer le Singleton plxAdmin
+	 *
+	 * @return	objet			return une instance de la classe plxAdmin
+	 * @author	Stephane F
+	 **/
+	public static function getInstance(){
+		if (!isset(self::$instance))
+			self::$instance = new plxAdmin(PLX_CONF);
+		return self::$instance;
+	}
 
 	/**
 	 * Constructeur qui appel le constructeur parent
@@ -15,7 +32,7 @@ class plxAdmin extends plxMotor {
 	 * @return	null
 	 * @author	Florent MONTHEL
 	 **/
-	public function __construct($filename) {
+	protected function __construct($filename) {
 
 		parent::__construct($filename);
 
@@ -41,7 +58,6 @@ class plxAdmin extends plxMotor {
 			$this->page = !empty($_SESSION['page'][$pageName])?intval($_SESSION['page'][$pageName]):1;
 		# On sauvegarde
 		if($savePage) $_SESSION['page'][$pageName] = $this->page;
-
 	}
 
 	/**
@@ -57,11 +73,6 @@ class plxAdmin extends plxMotor {
 		# on mémorise l'état actuel de l'urlrewriting
 		$urlrewrinting = isset($global['urlrewriting'])?$global['urlrewriting']:0;
 
-		# Tableau des clés à mettre sous chaîne cdata
-		$aCdata = array('title','description','racine','feed_footer','clef','meta_description','meta_keywords');
-		# Tableau des clés à mettre sous forme de numérique
-		$aNum = array('bypage','bypage_archives','bypage_admin','bypage_admin_coms','bypage_feed','miniatures_l','miniatures_h');
-
 		# Hook plugins
 		eval($this->plxPlugins->callHook('plxAdminEditConfiguration'));
 
@@ -75,17 +86,15 @@ class plxAdmin extends plxMotor {
 		$xml = "<?xml version='1.0' encoding='".PLX_CHARSET."'?>\n";
 		$xml .= "<document>\n";
 		foreach($global as $k=>$v) {
-			if(in_array($k,$aCdata))
-				$xml .= "\t<parametre name=\"$k\"><![CDATA[".plxUtils::cdataCheck($v)."]]></parametre>\n";
-			elseif(in_array($k,$aNum))
-				$xml .= "\t<parametre name=\"$k\">".intval($v)."</parametre>\n";
+			if(is_numeric($v))
+				$xml .= "\t<parametre name=\"$k\">".$v."</parametre>\n";
 			else
 				$xml .= "\t<parametre name=\"$k\"><![CDATA[".plxUtils::cdataCheck($v)."]]></parametre>\n";
 		}
 		$xml .= "</document>";
 
 		# On réinitialise la pagination au cas où modif de bypage_admin
-		$_SESSION['page'] = array();
+		unset($_SESSION['page']);
 
 		# Si la réécriture d'urls est demandée, on mets en place le fichier .htaccess
 		if(isset($content['urlrewriting']) AND $content['urlrewriting']==1 AND $urlrewrinting==0)
@@ -351,7 +360,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 		if(!in_array($content['lang'], plxUtils::getLangs()))
 			return plxMsg::Error(L_UNKNOWN_ERROR);
 
-		$this->aUsers[$content['id']]['email'] = $email;
+		$this->aUsers[$content['id']]['email'] = $content['email'];
 		$this->aUsers[$content['id']]['infos'] = trim($content['content']);
 		$this->aUsers[$content['id']]['lang'] = $content['lang'];
 		# Hook plugins
@@ -403,6 +412,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 				$this->aCats[$cat_id]['tri'] = $this->aConf['tri'];
 				$this->aCats[$cat_id]['bypage'] = $this->aConf['bypage'];
 				$this->aCats[$cat_id]['menu'] = 'oui';
+				$this->aCats[$cat_id]['active'] = 1;
 				$this->aCats[$cat_id]['description'] = '';
 				$this->aCats[$cat_id]['template'] = 'categorie.php';
 				$this->aCats[$cat_id]['meta_description'] = '';
@@ -425,6 +435,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 					$this->aCats[$cat_id]['tri'] = $content[$cat_id.'_tri'];
 					$this->aCats[$cat_id]['bypage'] = intval($content[$cat_id.'_bypage']);
 					$this->aCats[$cat_id]['menu'] = $content[$cat_id.'_menu'];
+					$this->aCats[$cat_id]['active'] = $content[$cat_id.'_active'];
 					$this->aCats[$cat_id]['ordre'] = intval($content[$cat_id.'_ordre']);
 					$this->aCats[$cat_id]['description'] = (isset($this->aCats[$cat_id]['description'])?$this->aCats[$cat_id]['description']:'');
 					$this->aCats[$cat_id]['template'] = (isset($this->aCats[$cat_id]['template'])?$this->aCats[$cat_id]['template']:'categorie.php');
@@ -461,7 +472,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 				else
 					$cats_url[] = $cat['url'];
 
-				$xml .= "\t<categorie number=\"".$cat_id."\" tri=\"".$cat['tri']."\" bypage=\"".$cat['bypage']."\" menu=\"".$cat['menu']."\" url=\"".$cat['url']."\" template=\"".basename($cat['template'])."\">";
+				$xml .= "\t<categorie number=\"".$cat_id."\" active=\"".$cat['active']."\" tri=\"".$cat['tri']."\" bypage=\"".$cat['bypage']."\" menu=\"".$cat['menu']."\" url=\"".$cat['url']."\" template=\"".basename($cat['template'])."\">";
 				$xml .= "<name><![CDATA[".plxUtils::cdataCheck($cat['name'])."]]></name>";
 				$xml .= "<description><![CDATA[".plxUtils::cdataCheck($cat['description'])."]]></description>";
 				$xml .= "<meta_description><![CDATA[".plxUtils::cdataCheck($cat['meta_description'])."]]></meta_description>";
@@ -566,7 +577,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 
 				# control de l'unicité du titre de la page
 				if(in_array($static['name'], $statics_name))
-					return plxMsg::Error(L_ERR_CATEGORY_ALREADY_EXISTS.' : '.plxUtils::strCheck($static['name']));
+					return plxMsg::Error(L_ERR_STATIC_ALREADY_EXISTS.' : '.plxUtils::strCheck($static['name']));
 				else
 					$statics_name[] = $static['name'];
 
@@ -795,7 +806,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 		$i = 0;
 		do { # On boucle en testant l'existence du fichier (cas de plusieurs commentaires/sec pour un article)
 			$i++;
-			$comment['filename'] = PLX_ROOT.$this->aConf['racine_commentaires'].$artId.'.'.$date.'-'.$i.'.xml';
+			$comment['filename'] = $artId.'.'.$date.'-'.$i.'.xml';
 		} while(file_exists($comment['filename']));
 		# On peut creer le commentaire
 		if($this->addCommentaire($comment)) # Commentaire OK
@@ -816,13 +827,13 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 
 		$comment=array();
 		# Génération du nom du fichier
-		$comment['filename'] = PLX_ROOT.$this->aConf['racine_commentaires'].$id.'.xml';
-		if(!file_exists($comment['filename'])) # Commentaire inexistant
+		$comment['filename'] = $id.'.xml';
+		if(!file_exists(PLX_ROOT.$this->aConf['racine_commentaires'].$comment['filename'])) # Commentaire inexistant
 			return plxMsg::Error(L_ERR_UNKNOWN_COMMENT);
 		# Controle des saisies
 		if(trim($content['mail'])!='' AND !plxUtils::checkMail(trim($content['mail'])))
 			return plxMsg::Error(L_ERR_INVALID_EMAIL);
-		if(trim($content['site'])!='' AND !plxUtils::checkSite(trim($content['site'])))
+		if(trim($content['site'])!='' AND !plxUtils::checkSite($content['site']))
 			return plxMsg::Error(L_ERR_INVALID_SITE);
 		# On récupère les infos du commentaire
 		$com = $this->parseCommentaire($comment['filename']);
@@ -838,8 +849,7 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 		$comment['mail'] = $content['mail'];
 		$comment['site'] = $content['site'];
 		$this->delCommentaire($id);
-		$this->addCommentaire($comment);
-		if(is_readable($comment['filename']))
+		if($this->addCommentaire($comment))
 			return plxMsg::Info(L_COMMENT_SAVE_SUCCESSFUL);
 		else
 			return plxMsg::Error(L_COMMENT_UPDATE_ERR);
@@ -870,35 +880,34 @@ RewriteRule ^feed\/(.*)$ feed.php?$1 [L]
 	 * Méthode qui permet de modérer ou valider un commentaire
 	 *
 	 * @param	id	identifiant du commentaire à traiter (que l'on retourne)
+	 * @param	mod	type de moderation (online ou offline)
 	 * @return	string
 	 * @author	Stephane F. et Florent MONTHEL
 	 **/
-	public function modCommentaire(&$id) {
+	public function modCommentaire(&$id, $mod) {
 
 		# Génération du nom du fichier
 		$oldfilename = PLX_ROOT.$this->aConf['racine_commentaires'].$id.'.xml';
 		if(!file_exists($oldfilename)) # Commentaire inexistant
 			return plxMsg::Error(L_ERR_UNKNOWN_COMMENT);
 		# Modérer ou valider ?
-		if(preg_match('/^_/',$id)) {
-			$type = 'val';
-			$id = str_replace('_', '', $id);
-		} else {
-			$type = 'mod';
-			$id = '_'.$id;
+		if(preg_match('/([[:punct:]]?)[0-9]{4}.[0-9]{10}-[0-9]+$/',$id,$capture)) {
+			$id=str_replace($capture[1],'',$id);
 		}
+		if($mod=='offline')
+			$id = '_'.$id;
 		# Génération du nouveau nom de fichier
 		$newfilename = PLX_ROOT.$this->aConf['racine_commentaires'].$id.'.xml';
 		# On renomme le fichier
 		@rename($oldfilename,$newfilename);
 		# Contrôle
 		if(is_readable($newfilename)) {
-			if($type == 'val')
+			if($type == 'online')
 				return plxMsg::Info(L_COMMENT_VALIDATE_SUCCESSFUL);
 			else
 				return plxMsg::Info(L_COMMENT_MODERATE_SUCCESSFUL);
 		} else {
-			if($type == 'val')
+			if($type == 'online')
 				return plxMsg::Error(L_COMMENT_VALIDATE_ERR);
 			else
 				return plxMsg::Error(L_COMMENT_MODERATE_ERR);

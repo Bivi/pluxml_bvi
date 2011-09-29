@@ -14,7 +14,6 @@ class plxMedias {
 	public $aFiles = array(); # liste des fichiers d'un dossier
 	public $maxUpload = array(); # taille maxi des images
 
-
 	public $thumbQuality = 60; # qualite image
 	public $thumbWidth = 60; # largeur des miniatures
 	public $thumbHeight = 60; # hauteur des miniatures
@@ -83,10 +82,6 @@ class plxMedias {
 								'path' => $path
 							);
 
-						# Création du dossier réservé aux miniatures
-						if(!is_dir($path.'.thumbs')) {
-							@mkdir($path.'.thumbs',0755,true);
-						}
 						$folders = array_merge($folders, $this->_getAllDirs($dir.$folder, $level+1) );
 					}
 				}
@@ -251,10 +246,10 @@ class plxMedias {
 	 **/
 	public function deleteDir($deldir) {
 
-		# suppression des miniatures
+		# suppression du dossier des miniatures et de son contenu
 		$this->_deleteDir($this->path.'.thumbs/'.$deldir);
 
-		# suppression du dossier
+		# suppression du dossier des images et de son contenu
 		if($this->_deleteDir($this->path.$deldir))
 			return plxMsg::Info(L_PLXMEDIAS_DEL_FOLDER_SUCCESSFUL);
 		else
@@ -303,11 +298,12 @@ class plxMedias {
 			return L_PLXMEDIAS_WRONG_FILEFORMAT;
 
 		# On teste l'existence du fichier et on formate le nom du fichier pour éviter les doublons
-		$i = 0;
+		$i = 1;
 		$upFile = $this->path.$this->dir.plxUtils::title2filename($file['name']);
+		$name = substr($upFile, 0, strrpos($upFile,'.'));
+		$ext = strrchr($upFile, '.');
 		while(file_exists($upFile)) {
-			$upFile = $this->path.$this->dir.$i.plxUtils::title2filename($file['name']);
-			$i++;
+			$upFile = $this->path.$this->dir.$name.'.'.$i++.$ext;
 		}
 
 		if(!@move_uploaded_file($file['tmp_name'],$upFile)) { # Erreur de copie
@@ -427,28 +423,25 @@ class plxMedias {
 	}
 
 	/**
-	 * Méthode qui recréer les vignettes dans .thumb
+	 * Méthode qui recréer les miniatures
 	 *
 	 * @param   files		liste des fichier à déplacer
-	 * @param	dir			répertoire source des images
+	 * @param	width		largeur des miniatures
+	 * @param	height		hauteur des miniatures
 	 * @return  boolean		faux si erreur sinon vrai
 	 * @author	Stephane F
-	 **/	
-	public function doThumbs($files, $dir) {
-
-		# Création du dossier réservé aux vignettes
-		if(!is_dir($this->path.'.thumbs/'.$dir)) {
-			@mkdir($this->path.'.thumbs/'.$dir,0755,true);
-		}
+	 **/
+	public function makeThumbs($files, $width, $height) {
 
 		$count = 0;
 		foreach($files as $file) {
 			$file=basename($file);
-			if(is_file($this->path.$dir.$file)) {
-				$ext = strtolower(strrchr($this->path.$dir.$file,'.'));
+			if(is_file($this->path.$this->dir.$file)) {
+				$thumName = plxUtils::thumbName($file);
+				$ext = strtolower(strrchr($this->path.$this->dir.$file,'.'));
 				if(in_array($ext, array('.gif', '.jpg', '.png'))) {
-					$_thumb1 = plxUtils::makeThumb($this->path.$dir.$file, $this->path.'.thumbs/'.$dir.$file, $this->thumbWidth, $this->thumbHeight, $this->thumbQuality);
-					$count++;
+					if(plxUtils::makeThumb($this->path.$this->dir.$file, $this->path.$this->dir.$thumName, $width, $height, 80))
+						$count++;
 				}
 			}
 		}

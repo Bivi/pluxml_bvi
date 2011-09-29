@@ -28,9 +28,10 @@ define('PROFIL_WRITER', 4);
 error_reporting(E_ALL ^ E_NOTICE);
 
 # taille redimensionnement des images et miniatures
-$img_redim = array('160x100', '320x200', '500x380', '640x480');
+$img_redim = array('320x200', '500x380', '640x480');
 $img_thumb = array('50x50', '75x75', '100x100');
 
+# gestion du timezone
 if(function_exists("date_default_timezone_set") and function_exists("date_default_timezone_get"))
 	@date_default_timezone_set(@date_default_timezone_get());
 
@@ -58,4 +59,13 @@ function loadLang($filename) {
 		}
 	}
 }
+
+# Fonction qui retourne le timestamp UNIX actuel avec les microsecondes
+function getMicrotime() {
+	$t = explode(' ',microtime());
+	return $t[0]+$t[1];
+}
+
+# Initialisation du timer d'execution
+define('PLX_MICROTIME', getMicrotime());
 ?>

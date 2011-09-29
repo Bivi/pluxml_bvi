@@ -104,6 +104,8 @@ $LANG = array(
 'L_CATEGORY_ADD_BUTTON'				=> "Ajouter",
 'L_ARTICLE_META_DESCRIPTION'		=> 'Contenu balise meta "description" (option)',
 'L_ARTICLE_META_KEYWORDS'			=> 'Contenu balise meta "keywords" (option)',
+'L_ARTICLE_CHAPO_HIDE'				=> 'masquer',	
+'L_ARTICLE_CHAPO_DISPLAY'			=> 'afficher',
 
 # auth.php
 
@@ -116,7 +118,7 @@ $LANG = array(
 'L_ERR_WRONG_PASSWORD' 				=> 'Login et/ou mot de passe incorrect',
 'L_POWERED_BY'						=> 'G&eacute;n&eacute;r&eacute; par <a href="http://pluxml.org">PluXml</a>',
 
-# 
+#
 
 'L_SORT_ASCENDING_DATE'				=> 'date croissante',
 'L_SORT_DESCENDING_DATE'			=> 'date d&eacute;croissante',
@@ -129,8 +131,9 @@ $LANG = array(
 
 # categories.php
 
-'L_CAT_TITLE'						=> 'Cr&eacute;ation et &eacute;dition de cat&eacute;gories',
+'L_CAT_TITLE'						=> 'Cr&eacute;ation et &eacute;dition des cat&eacute;gories',
 'L_CAT_LIST_ID' 					=> 'Identifiant',
+'L_CAT_LIST_ACTIVE'					=> 'Active',
 'L_CAT_LIST_NAME' 					=> 'Nom de la cat&eacute;gorie',
 'L_CAT_LIST_URL' 					=> 'Url',
 'L_CAT_LIST_SORT' 					=> 'Tri des articles',
@@ -291,7 +294,7 @@ $LANG = array(
 'L_MEDIAS_ALIGN_LEFT'				=> 'Gauche',
 'L_MEDIAS_ALIGN_CENTER'				=> 'Centre',
 'L_MEDIAS_ALIGN_RIGHT'				=> 'Droite',
-'L_MEDIAS_RECREATE_THUMB'			=> 'Recr&eacute;er vignette',
+'L_MEDIAS_RECREATE_THUMB'			=> 'Recr&eacute;er miniatures',
 
 # parametres_affichage.php
 
@@ -305,6 +308,7 @@ $LANG = array(
 'L_CONFIG_VIEW_BYPAGE_ADMIN'		=> 'Nombre d\'articles affich&eacute;s par page dans l\'administration',
 'L_CONFIG_VIEW_SORT_COMS'			=> 'Tri des commentaires',
 'L_CONFIG_VIEW_BYPAGE_ADMIN_COMS'	=> 'Nombre de commentaires affich&eacute;s par page dans l\'administration',
+'L_CONFIG_VIEW_IMAGES'				=> 'Taille des images (largeur x hauteur)',
 'L_CONFIG_VIEW_THUMBS'				=> 'Taille des miniatures (largeur x hauteur)',
 'L_CONFIG_VIEW_HOMESTATIC'			=> 'Utiliser une page statique comme page d\'accueil',
 'L_CONFIG_VIEW_HOMESTATIC_ACTIVE'	=> '<span class="alert">Attention cette page est inactive</span>',
@@ -449,7 +453,8 @@ $LANG = array(
 'L_STATICS_MENU'					=> 'Menu',
 'L_STATICS_ACTION'					=> 'Action',
 'L_STATICS_TEMPLATE_FIELD'			=> 'Template',
-'L_STATICS_PAGE_HOME'				=> 'D&eacute;finie en tant que page d\'accueil',
+'L_STATICS_PAGE_HOME'				=> 'D&eacute;finir en tant que page d\'accueil',
+'L_STATICS_HOME_PAGE' 			 	=> 'Page<br />d\'accueil',
 'L_PAGE'							=> 'Page',
 'L_VIEW'							=> 'Voir',
 'L_STATICS_SRC_TITLE'				=> '&Eacute;diter le code source de cette page',
@@ -457,6 +462,7 @@ $LANG = array(
 'L_STATICS_NEW_PAGE'				=> 'Nouvelle page',
 'L_STATICS_UPDATE'					=> 'Modifier la liste des pages statiques',
 'L_ERR_STATIC_ALREADY_EXISTS'		=> 'Titre de page statique d&eacute;j&agrave; utilis&eacute;',
+
 
 # top.php
 'L_PROFIL_ADMIN'					=> 'Administrateur',

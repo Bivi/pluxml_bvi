@@ -11,7 +11,9 @@
 #
 # ------------------- END LICENSE BLOCK -------------------
 
-# Configuration avançée #
+include('config.php');
+
+# Définition des constantes
 define('PLX_ROOT', './');
 define('PLX_CORE', PLX_ROOT.'core/');
 define('PLX_PLUGINS', PLX_ROOT.'plugins/');
@@ -24,7 +26,6 @@ if(!file_exists(PLX_CONF)) {
 }
 
 # On inclut les librairies nécessaires
-include(PLX_ROOT.'config.php');
 include(PLX_CORE.'lib/class.plx.date.php');
 include(PLX_CORE.'lib/class.plx.glob.php');
 include(PLX_CORE.'lib/class.plx.utils.php');
@@ -34,7 +35,7 @@ include(PLX_CORE.'lib/class.plx.feed.php');
 include(PLX_CORE.'lib/class.plx.plugins.php');
 
 # Creation de l'objet principal et lancement du traitement
-$plxFeed = new plxFeed(PLX_CONF);
+$plxFeed = plxFeed::getInstance();
 
 # Chargement du fichier de langue
 loadLang(PLX_CORE.'lang/'.$plxFeed->aConf['default_lang'].'/core.php');

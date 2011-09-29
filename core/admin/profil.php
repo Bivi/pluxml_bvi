@@ -31,7 +31,7 @@ if(!empty($_POST)) {
 # On inclut le header
 include(dirname(__FILE__).'/top.php');
 
-$profil = $plxAdmin->aUsers[$_SESSION['user']];
+$_profil = $plxAdmin->aUsers[$_SESSION['user']];
 ?>
 
 <h2><?php echo L_PROFIL_EDIT_TITLE ?></h2>
@@ -40,15 +40,15 @@ $profil = $plxAdmin->aUsers[$_SESSION['user']];
 
 <form action="profil.php" method="post" id="form_profil">
 	<fieldset class="withlabel">
-		<p class="field"><label><?php echo L_PROFIL_LOGIN ?>&nbsp;:</label>&nbsp;<strong><?php echo plxUtils::strCheck($profil['login']) ?></strong></p>
+		<p class="field"><label><?php echo L_PROFIL_LOGIN ?>&nbsp;:</label>&nbsp;<strong><?php echo plxUtils::strCheck($_profil['login']) ?></strong></p>
 		<p class="field"><label for="id_name"><?php echo L_PROFIL_USER ?>&nbsp;:</label></p>
-		<?php plxUtils::printInput('name', plxUtils::strCheck($profil['name']), 'text', '20-255') ?>
+		<?php plxUtils::printInput('name', plxUtils::strCheck($_profil['name']), 'text', '20-255') ?>
 		<p class="field"><label for="id_email"><?php echo L_PROFIL_MAIL ?>&nbsp;:</label></p>
-		<?php plxUtils::printInput('email', plxUtils::strCheck($profil['email']), 'text', '30-255') ?>
+		<?php plxUtils::printInput('email', plxUtils::strCheck($_profil['email']), 'text', '30-255') ?>
 		<p class="field"><label for="id_lang"><?php echo L_PROFIL_ADMIN_LANG ?>&nbsp;:</label></p>
-		<?php plxUtils::printSelect('lang', plxUtils::getLangs(), $profil['lang']) ?>
+		<?php plxUtils::printSelect('lang', plxUtils::getLangs(), $_profil['lang']) ?>
 		<p id="p_content"><label for="id_content"><?php echo L_PROFIL_INFOS ?>&nbsp;:</label></p>
-		<?php plxUtils::printArea('content',plxUtils::strCheck($profil['infos']),140,5); ?>
+		<?php plxUtils::printArea('content',plxUtils::strCheck($_profil['infos']),140,5); ?>
 	</fieldset>
 	<?php eval($plxAdmin->plxPlugins->callHook('AdminProfil')) # Hook Plugins ?>
 	<p class="center">

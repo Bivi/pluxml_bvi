@@ -11,6 +11,8 @@
 #
 # ------------------- END LICENSE BLOCK -------------------
 
+include('config.php');
+
 # Configuration avançée #
 define('PLX_ROOT', './');
 define('PLX_CORE', PLX_ROOT.'core/');
@@ -18,9 +20,6 @@ define('PLX_CONF', PLX_ROOT.'data/configuration/parametres.xml');
 
 # On démarre la session
 session_start();
-
-# Chargement du fichier de configuration
-include(PLX_ROOT.'config.php');
 
 # Chargement des langues
 $lang = DEFAULT_LANG;
@@ -84,8 +83,10 @@ $config = array('title'=>'PluXml',
 				'bypage_feed'=>8,
 				'tri'=>'desc',
 				'tri_coms'=>'asc',
-				'miniatures_l'=>'200',
-				'miniatures_h'=>'100',
+				'images_l'=>800,
+				'images_h'=>600,				
+				'miniatures_l'=>200,
+				'miniatures_h'=>100,
 				'images'=>'data/images/',
 				'documents'=>'data/documents/',
 				'racine_articles'=>'data/articles/',
@@ -108,21 +109,14 @@ $config = array('title'=>'PluXml',
 
 function install($content, $config) {
 
-	# Tableau des clés à mettre sous chaîne cdata
-	$aCdata = array('title','description','racine','feed_footer','clef','meta_description','meta_keywords');
-	# Tableau des clés à mettre sous forme de numérique
-	$aNum = array('bypage','bypage_archives','bypage_admin','bypage_admin_coms','bypage_feed','miniatures_l','miniatures_h');
-
 	# Création du fichier de configuration
 	$xml = '<?xml version="1.0" encoding="'.PLX_CHARSET.'"?>'."\n";
 	$xml .= '<document>'."\n";
-	foreach($config as $k=>$v) {
-		if(in_array($k,$aCdata))
-			$xml .= "\t<parametre name=\"$k\"><![CDATA[".plxUtils::cdataCheck($v)."]]></parametre>\n";
-		elseif(in_array($k,$aNum))
-			$xml .= "\t<parametre name=\"$k\">".intval($v)."</parametre>\n";
+	foreach($config  as $k=>$v) {
+		if(is_numeric($v))
+			$xml .= "\t<parametre name=\"$k\">".$v."</parametre>\n";
 		else
-			$xml .= "\t<parametre name=\"$k\">".plxUtils::cdataCheck($v)."</parametre>\n";
+			$xml .= "\t<parametre name=\"$k\"><![CDATA[".plxUtils::cdataCheck($v)."]]></parametre>\n";
 	}
 	$xml .= '</document>';
 	plxUtils::write($xml,PLX_CONF);
@@ -247,7 +241,7 @@ plxUtils::cleanHeaders();
 		<div style="margin-left:200px"><h2><?php echo L_PLUXML_VERSION.' '.$version ?> - <?php echo L_INSTALL_TITLE ?></h2></p>
 	</div>
 	<div id="content">
-		<?php if($msg!='') echo '<p class="error">'.$msg.'</p>'; ?>
+		<?php if($msg!='') echo '<p class="warning error">'.$msg.'</p>'; ?>
 		<form action="install.php" method="post">
 		<fieldset class="panel">
 			<p class="field"><label for="id_default_lang"><?php echo L_SELECT_LANG ?>&nbsp;:</label></p>

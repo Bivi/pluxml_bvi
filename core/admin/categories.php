@@ -44,6 +44,7 @@ include(dirname(__FILE__).'/top.php');
 			<th class="title"><?php echo L_CAT_LIST_ID ?></th>
 			<th><?php echo L_CAT_LIST_NAME ?></th>
 			<th><?php echo L_CAT_LIST_URL ?></th>
+			<th><?php echo L_CAT_LIST_ACTIVE ?></th>			
 			<th><?php echo L_CAT_LIST_SORT ?></th>
 			<th><?php echo L_CAT_LIST_BYPAGE ?></th>
 			<th><?php echo L_CAT_LIST_ORDER ?></th>
@@ -65,6 +66,8 @@ include(dirname(__FILE__).'/top.php');
 			plxUtils::printInput($k.'_name', plxUtils::strCheck($v['name']), 'text', '15-50');
 			echo '</td><td>';
 			plxUtils::printInput($k.'_url', $v['url'], 'text', '15-50');
+			echo '</td><td>';
+			plxUtils::printSelect($k.'_active', array('1'=>L_YES,'0'=>L_NO), $v['active']);
 			echo '</td><td>';
 			plxUtils::printSelect($k.'_tri', $aTri, $v['tri']);
 			echo '</td><td>';
@@ -95,6 +98,8 @@ include(dirname(__FILE__).'/top.php');
 				plxUtils::printInput($new_catid.'_name', '', 'text', '15-50');
 				echo '</td><td>';
 				plxUtils::printInput($new_catid.'_url', '', 'text', '15-50');
+				echo '</td><td>';
+				plxUtils::printSelect($new_catid.'_active', array('1'=>L_YES,'0'=>L_NO), '1');
 				echo '</td><td>';
 				plxUtils::printSelect($new_catid.'_tri', $aTri, $plxAdmin->aConf['tri']);
 				echo '</td><td>';

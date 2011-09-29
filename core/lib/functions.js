@@ -48,7 +48,6 @@ function addText(where, open, close) {
 	return;
 }
 function checkAll(inputs, field) {
-	alert(inputs.elements.length);
 	for(var i = 0; i < inputs.elements.length; i++) {
 		if(inputs[i].type == "checkbox" && inputs[i].name==field) {
 			inputs[i].checked = !inputs[i].checked ;

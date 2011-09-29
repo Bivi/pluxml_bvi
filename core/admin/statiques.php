@@ -20,6 +20,10 @@ $plxAdmin->checkProfil(PROFIL_ADMIN, PROFIL_MANAGER);
 
 # On édite les pages statiques
 if(!empty($_POST)) {
+	if(isset($_POST['homeStatic']))
+		$plxAdmin->editConfiguration($plxAdmin->aConf, array('homestatic'=>$_POST['homeStatic'][0]));
+	else
+		$plxAdmin->editConfiguration($plxAdmin->aConf, array('homestatic'=>''));
 	$plxAdmin->editStatiques($_POST);
 	header('Location: statiques.php');
 	exit;
@@ -28,7 +32,16 @@ if(!empty($_POST)) {
 # On inclut le header
 include(dirname(__FILE__).'/top.php');
 ?>
-
+<script type="text/javaScript">
+function checkBox(cb) { 
+	cbs=document.getElementsByName('homeStatic[]');
+	for (var i = 0; i < cbs.length; i++) {
+		if(cbs[i].checked==true) {
+			cbs[i].checked = ((i+1) == cb) ? true: false;
+		}
+	}
+}
+</script>
 <h2><?php echo L_STATICS_PAGE_TITLE ?></h2>
 
 <?php eval($plxAdmin->plxPlugins->callHook('AdminStaticsTop')) # Hook Plugins ?>
@@ -38,7 +51,8 @@ include(dirname(__FILE__).'/top.php');
 	<thead>
 		<tr>
 			<th style="checkbox"><input type="checkbox" onclick="checkAll(this.form, 'idStatic[]')" /></th>
-			<th><?php echo L_STATICS_ID ?></th>
+			<th style="width:80px"><?php echo L_STATICS_ID ?></th>
+			<th style="width:60px"><?php echo L_STATICS_HOME_PAGE ?></th>	
 			<th><?php echo L_STATICS_GROUP ?></th>
 			<th><?php echo L_STATICS_TITLE ?></th>
 			<th><?php echo L_STATICS_URL ?></th>
@@ -58,10 +72,13 @@ include(dirname(__FILE__).'/top.php');
 			$ordre = ++$num;
 			echo '<tr class="line-'.($num%2).'">';
 			echo '<td><input type="checkbox" name="idStatic[]" value="'.$k.'" /><input type="hidden" name="staticNum[]" value="'.$k.'" /></td>';
-			echo '<td>'.L_PAGE.' '.$k.($k==$plxAdmin->aConf['homestatic']?' <img src="theme/images/home.png" alt="" title="'.L_STATICS_PAGE_HOME.'" />':'').'</td><td>';
-			plxUtils::printInput($k.'_group', plxUtils::strCheck($v['group']), 'text', '13-50');
+			echo '<td>'.L_PAGE.' '.$k.'</td><td>';
+			$selected = $plxAdmin->aConf['homestatic']==$k ? ' checked="checked"' : '';
+			echo '<input title="'.L_STATICS_PAGE_HOME.'" type="checkbox" name="homeStatic[]" value="'.$k.'"'.$selected.' onclick="checkBox(\''.$num.'\')" />';			
 			echo '</td><td>';
-			plxUtils::printInput($k.'_name', plxUtils::strCheck($v['name']), 'text', '13-50');
+			plxUtils::printInput($k.'_group', plxUtils::strCheck($v['group']), 'text', '13-100');
+			echo '</td><td>';
+			plxUtils::printInput($k.'_name', plxUtils::strCheck($v['name']), 'text', '13-255');
 			echo '</td><td>';
 			plxUtils::printInput($k.'_url', $v['url'], 'text', '12-255');
 			echo '</td><td>';
@@ -96,9 +113,10 @@ include(dirname(__FILE__).'/top.php');
 			<td>
 			<?php
 				echo '<input type="hidden" name="staticNum[]" value="'.$new_staticid.'" />';
-				plxUtils::printInput($new_staticid.'_group', '', 'hidden', '13-50');
+				plxUtils::printInput($new_staticid.'_group', '', 'hidden', '13-100');
 				echo '</td><td>';
-				plxUtils::printInput($new_staticid.'_name', '', 'text', '13-50');
+								echo '</td><td>';
+				plxUtils::printInput($new_staticid.'_name', '', 'text', '13-255');
 				plxUtils::printInput($new_staticid.'_template', 'static.php', 'hidden');
 				echo '</td><td>';
 				plxUtils::printInput($new_staticid.'_url', '', 'text', '12-255');

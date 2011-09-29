@@ -36,7 +36,6 @@
 
 			<div class="user">
 				<p>
-					<?php //echo L_LOGIN; ?>
 					<span class="username"><?php echo plxUtils::strCheck($plxAdmin->aUsers[$_SESSION['user']]['name']) ?></span>
 					<?php
 						if($_SESSION['profil']==PROFIL_ADMIN) printf('<em>(%s)</em>',L_PROFIL_ADMIN);
@@ -68,7 +67,10 @@
 						$menus[] = plxUtils::formatMenu(L_MENU_STATICS, 'statiques.php', L_MENU_STATICS_TITLE);
 					}
 					if($_SESSION['profil'] <= PROFIL_MODERATOR) {
-						$menus[] = plxUtils::formatMenu(L_MENU_COMMENTS, 'comments.php?page=1', L_MENU_COMMENTS_TITLE);
+						$nbcoms = $plxAdmin->nbComments('offline');
+						$coms_offline = $nbcoms>0 ? '&nbsp;<span style="background-color:red;color:#fff;padding:0 3px 0 3px">'.$plxAdmin->nbComments('offline').'</span>':'';
+						$sel = $nbcoms>0 ? 'sel=offline&amp;' : 'sel=all&amp;';
+						$menus[] = plxUtils::formatMenu(L_MENU_COMMENTS.$coms_offline, 'comments.php?'.$sel.'page=1', L_MENU_COMMENTS_TITLE);
 					}
 					if($_SESSION['profil'] <= PROFIL_EDITOR) {
 						$menus[] = plxUtils::formatMenu(L_MENU_CATEGORIES,'categories.php', L_MENU_CATEGORIES_TITLE);
@@ -120,3 +122,5 @@
 				if(is_file(PLX_ROOT.'install.php')) echo L_WARNING_INSTALLATION_FILE;
 				plxMsg::Display();
 			?>
+
+<?php eval($plxAdmin->plxPlugins->callHook('AdminTopBottom')) ?>

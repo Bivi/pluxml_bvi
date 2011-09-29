@@ -11,17 +11,6 @@
 class plxDate {
 
 	/**
-	 * Méthode qui retourne le timestamp UNIX actuel avec les microsecondes
-	 *
-	 * @return	timestamp	valeur du timestamp actuel
-	 **/
-	public static function microtime() {
-
-		$t = explode(' ',microtime());
-		return $t[0]+$t[1];
-	}
-
-	/**
 	 * Méthode qui retourne le libellé du mois ou du jour passé en paramètre
 	 *
 	 * @param	key		constante: 'day' ou 'month'

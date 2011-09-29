@@ -26,14 +26,13 @@ class plxToken {
 	const FIELDNAME = 'token';
 
 	public static function getTokenPostMethod() {
-	//	unset($_SESSION['formtoken']);
 		$token = self::_generateToken();
 		return '<input name="'.self::FIELDNAME.'" value="'.$token.'" type="hidden" />';
 	}
 
 	public static function validateFormToken($request, $clear = true) {
 
-		if(!empty($_POST)) {
+		if($_SERVER['REQUEST_METHOD']=='POST') {
 			$valid = false;
 			$posted = isset($request[self::FIELDNAME]) ? $request[self::FIELDNAME] : '';
 			if (!empty($posted)) {
